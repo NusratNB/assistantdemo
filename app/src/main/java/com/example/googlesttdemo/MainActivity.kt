@@ -2,9 +2,7 @@ package com.example.googlesttdemo
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.content.res.AssetFileDescriptor
-import android.content.res.AssetManager
-import androidx.appcompat.app.AppCompatActivity
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -13,15 +11,15 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.example.googlesttdemo.spectoimage.GoogleServices
 import com.example.googlesttdemo.spectoimage.RecordWavMaster
 import com.example.googlesttdemo.wavreader.FileFormatNotSupportedException
 import com.example.googlesttdemo.wavreader.WavFile
 import com.example.googlesttdemo.wavreader.WavFileException
 import java.io.File
-import java.io.FileInputStream
 import java.io.IOException
-import com.example.googlesttdemo.spectoimage.GoogleSTT
 
 
 class MainActivity : AppCompatActivity() {
@@ -30,9 +28,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnInference: Button
     private lateinit var fullAudioPath: File
     private lateinit var pathToRecords: File
+    private lateinit var pathToSavingAudio: File
+    private lateinit var txtSent: TextView
+    private lateinit var txtReceived: TextView
     private lateinit var fileName: File
     private var playingAvailable: Boolean = false
-    private lateinit var txtResult: TextView
+    private lateinit var prevSentAudio: File
+    private var prevRecAudio = ""
+    private var audioFilePath = ""
+    private lateinit var mediaPlayer: MediaPlayer
+//    private var responseFromNLU = ""
+
 
 
     private val requestPermission: ActivityResultLauncher<Array<String>> =
@@ -57,7 +63,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val googlestt = GoogleSTT()
+        val googlestt = GoogleServices(assets)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO),200);
@@ -67,6 +73,12 @@ class MainActivity : AppCompatActivity() {
         if (!pathToRecords.exists()){
             pathToRecords.mkdir()
         }
+
+        pathToSavingAudio = File(externalCacheDir?.absoluteFile, "SavedRecordings" )
+        if (!pathToSavingAudio.exists()){
+            pathToSavingAudio.mkdir()
+        }
+
         val audioRecorder = RecordWavMaster(this, pathToRecords.toString())
         var recording = true
         btnRecord = findViewById(R.id.btnRecord)
@@ -93,40 +105,60 @@ class MainActivity : AppCompatActivity() {
         btnPlay.text = "Play"
         btnPlay.setOnClickListener{
             if (playingAvailable){
-                audioRecorder.startPlaying(this, 1, fileName)
+                if (audioFilePath.isNotEmpty()){
+                    mediaPlayer = MediaPlayer()
+                    mediaPlayer.setDataSource(audioFilePath)
+                    mediaPlayer.prepare()
+                    mediaPlayer.start()
+                    prevRecAudio = audioFilePath
+                }
+                if (prevSentAudio.path.isNotEmpty()){
+                    prevSentAudio.delete()
+                }
 
             } else{
                 Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
             }
-//            try {
-//                if (playingAvailable){
-//                    audioRecorder.startPlaying(this, 1, fileName)
-//                }
-//            } catch (e: Exception){
-//                Toast.makeText(this, "Please record audio", Toast.LENGTH_SHORT).show()
-//            }
             btnPlay.text = "Play"
 
-
         }
-        txtResult = findViewById(R.id.txtResult)
+        txtReceived = findViewById(R.id.txtReceived)
+        txtSent = findViewById(R.id.txtSent)
         btnInference = findViewById(R.id.btnPredict)
         btnInference.setOnClickListener {
-//            val audioData = notNormAudio/32768f
-//            for (xx in audioData?.get(0)?.indices!!){
-//                Log.d("wavfile", audioData[0][xx].toString())
-////                normAudioData?.set(xx, audioData[0][xx]/32767f)
-//            }
-
-
             if (fileName.path.isNotEmpty()){
+                Thread {
+                    val ttt = googlestt.getSTTText(fileName.path)
+                    Thread {
+                        googlestt.getResponseClovaStudio(ttt){ responseFromNLU->
+                            Thread{
+                                val time = android.text.format.Time()
+                                time.setToNow()
+                                audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
+                                prevSentAudio = fileName
+                                Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+                                Log.d("audioFilePath", audioFilePath)
+                                googlestt.googletts(audioFilePath, responseFromNLU)
+                                if (prevRecAudio.isNotEmpty()){
+                                    val ff = File(prevRecAudio)
+                                    ff.delete()
+                                }
 
-                val audioData = readMagnitudeValuesFromFile(fileName.path,-1, -1, 0 )
-//                val normAudioData = audioData?.size?.let { it1 -> FloatArray(it1) }
-                val ttt = googlestt.getSTTText(assets,fileName.path)
-                txtResult.setText(ttt)
+                            }.start()
+                            runOnUiThread {
+                                txtSent.text ="Sent: " + ttt
+                                txtReceived.text = "Received: " + responseFromNLU
+//                                Toast.makeText(this, "The audio saved on: $audioFilePath", Toast.LENGTH_SHORT).show()
+
+                            }
+
+                        }
 
 
+                    }.start()
+                }.start()
+
+//
 
 
             }else{

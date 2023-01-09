@@ -49,11 +49,17 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
 //    implementation platform('com.google.cloud:libraries-bom:26.1.0')
     implementation 'org.apache.commons:commons-math3:3.6.1'
-    implementation 'com.google.cloud:google-cloud-speech:4.0.0'
+//    implementation 'com.google.cloud:google-cloud-speech:4.0.0'
+    implementation 'com.google.cloud:google-cloud-speech'
     implementation "com.google.auth:google-auth-library-oauth2-http:1.12.1"
     implementation "io.grpc:grpc-okhttp:1.48.0"
     implementation "io.grpc:grpc-stub:1.38.1"
     implementation 'com.google.api-client:google-api-client:1.30.9'
+    implementation platform('com.google.cloud:libraries-bom:26.1.4')
+    implementation 'com.squareup.okhttp3:okhttp:4.9.0'
+
+    implementation 'com.google.cloud:google-cloud-texttospeech'
+
 
 
 

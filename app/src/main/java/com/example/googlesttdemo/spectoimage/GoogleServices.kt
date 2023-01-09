@@ -1,0 +1,175 @@
+package com.example.googlesttdemo.spectoimage
+
+import android.content.res.AssetManager
+import android.util.Log
+//import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.cloud.speech.v1.RecognitionAudio
+import com.google.cloud.speech.v1.RecognitionConfig
+import com.google.cloud.speech.v1.SpeechClient
+import com.google.cloud.speech.v1.SpeechSettings
+import com.google.cloud.texttospeech.v1.*
+import com.google.protobuf.ByteString
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.*
+
+
+class GoogleServices(assetManager: AssetManager ) {
+
+
+
+    private fun readFromInputStream(inputStream: InputStream): String {
+        val reader = BufferedReader(InputStreamReader(inputStream))
+        val stringBuilder = StringBuilder()
+
+        var line: String? = reader.readLine()
+        while (line != null) {
+            stringBuilder.append(line)
+            line = reader.readLine()
+        }
+
+        reader.close()
+        return stringBuilder.toString()
+    }
+
+    private var responseText = ""
+    private val oauthKeyName = "credentials/caremeta-daea7ac2a8c7.json"
+    private val inputStream = assetManager.open(oauthKeyName)
+    private val oauthKey = readFromInputStream(inputStream)
+//    val credentials = GoogleCredentials.fromJson(oauthKey)
+
+    fun getSTTText(audioURI: String): String {
+
+        val audioInputStream = FileInputStream(audioURI)
+        val audioBytes = audioInputStream.readBytes()
+
+
+
+        val speechClient = SpeechClient.create(
+            SpeechSettings.newBuilder()
+                .setCredentialsProvider { GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray())) }
+                .build())
+//        val gcsUri = "gs://cloud-samples-data/speech/brooklyn_bridge.raw"
+        val config =
+            RecognitionConfig.newBuilder()
+                .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
+                .setSampleRateHertz(16000)
+                .setLanguageCode("ko-KR")
+                .build()
+        val audio = RecognitionAudio.newBuilder()
+            .setContent(ByteString.copyFrom(audioBytes))
+            .build()
+
+        val response = speechClient.recognize(config, audio)
+        val results = response.resultsList
+        var transcription = ""
+        for (result in results) {
+            // Appends the transcription of the audio file
+            for (alternative in result.alternativesList) {
+                transcription += "${alternative.transcript} "
+            }
+        }
+        Log.d("Google STT result: ", transcription)
+        speechClient.close()
+        return transcription
+    }
+
+    fun googletts(pathToAudio: String, inputText:String){
+
+        val speechClient = TextToSpeechClient.create(
+            TextToSpeechSettings.newBuilder().setCredentialsProvider { GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray())) }.build()
+        )
+        val input = SynthesisInput.newBuilder().setText(inputText).build()
+        val voice = VoiceSelectionParams.newBuilder()
+            .setLanguageCode("ko-KR")
+            .setSsmlGender(SsmlVoiceGender.NEUTRAL)
+            .build()
+
+        val audioConfig = AudioConfig.newBuilder()
+            .setAudioEncoding(AudioEncoding.MP3).build()
+
+        val response = speechClient.synthesizeSpeech(input, voice, audioConfig)
+
+        val audioContents = response.audioContent
+        FileOutputStream(pathToAudio).use { out ->
+            out.write(audioContents.toByteArray())
+            out.close()
+
+        }
+    }
+
+
+    fun getResponseClovaStudio(inputText: String, callback: (String) -> Unit){
+        val host = "clovastudio.apigw.ntruss.com"
+        val apiKey = "NTA0MjU2MWZlZTcxNDJiY+iKD5C//ZinLvJkGG2+pGY3yebzfgfa8eYfiCSbuAk88oUuMiZewKsNwbO3LUvjR8m9OL4gnXtKoYhXPqo/NQ+IR2yQDmv/hmjtk5i9l5muyJgBLrigC5GTQtuVspjdKv1FiXYQA8rI4oVPyqrx3OltxeW9kIeGRb54uAeKsHSk2GHT/mIEHmV3VPFegPT+jA=="
+        val apiKeyPrimaryVal = "G1OJGTVOHaC2N36FfkKjBSFsztvqmLMNxznm0VcO"
+        val requestId = "1d30c0a7a3fb4951b75c14ab55090de6"
+        val requestedText = "###A:$inputText###B:"
+
+
+
+        val completionRequest = """
+            {
+            "text": "$requestedText",
+            "maxTokens": 300,
+            "temperature": 0.85,
+            "topK": 4,
+            "topP": 0.8,
+            "repeatPenalty": 5.0,
+            "start": "",
+            "restart": "",
+            "stopBefore": ["<|endoftext|>"],
+            "includeTokens": false,
+            "includeAiFilters": true,
+            "includeProbs": false
+                }
+        """
+        Log.d("completionRequest", completionRequest)
+
+        val url = "https://$host/testapp/v1/tasks/n2av10my/completions/LK-B"
+
+        val client = OkHttpClient()
+
+        val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), completionRequest)
+
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .addHeader("X-NCP-CLOVASTUDIO-API-KEY", apiKey)
+            .addHeader("X-NCP-APIGW-API-KEY", apiKeyPrimaryVal)
+            .addHeader("X-NCP-CLOVASTUDIO-REQUEST-ID", requestId)
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                println("Request failed: $e")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseCode = response.code
+                val responseMessage = response.message
+                val responseBody = response.body?.source()
+                if (responseCode != 200 || responseBody == null) {
+                    Log.e("Error: ", "$responseCode $responseMessage: $responseBody")
+
+                }
+                try {
+                    val json = JSONObject(responseBody!!.readUtf8())
+                    val result = json.get("result")
+                    val resultJson = JSONObject(result.toString())
+                    val text = resultJson.get("text")
+                    responseText = text.toString()
+                } catch (e: JSONException) {
+                    Log.e("Json Error: ", e.toString())
+                }
+                callback(responseText)
+
+            }
+        })
+
+    }
+}
