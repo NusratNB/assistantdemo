@@ -101,6 +101,10 @@ class GoogleServices(assetManager: AssetManager ) {
         }
     }
 
+    fun getResponseGPT3(){
+
+    }
+
 
     fun getResponseClovaStudio(inputText: String, callback: (String) -> Unit){
         val host = "clovastudio.apigw.ntruss.com"

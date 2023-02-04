@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     private var prevRecAudio = ""
     private var audioFilePath = ""
     private lateinit var mediaPlayer: MediaPlayer
-//    private var responseFromNLU = ""
+
 
 
 
