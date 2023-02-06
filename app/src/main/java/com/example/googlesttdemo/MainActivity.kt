@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -33,10 +34,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtReceived: TextView
     private lateinit var fileName: File
     private var playingAvailable: Boolean = false
-    private lateinit var prevSentAudio: File
+    private var prevSentAudio: File? = null
     private var prevRecAudio = ""
     private var audioFilePath = ""
     private lateinit var mediaPlayer: MediaPlayer
+    private lateinit var radioGroupLM: RadioGroup
 
 
 
@@ -64,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val googlestt = GoogleServices(assets)
+        radioGroupLM = findViewById(R.id.radGroupLMType)
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO),200);
@@ -112,8 +115,8 @@ class MainActivity : AppCompatActivity() {
                     mediaPlayer.start()
                     prevRecAudio = audioFilePath
                 }
-                if (prevSentAudio.path.isNotEmpty()){
-                    prevSentAudio.delete()
+                if (prevSentAudio?.path?.isNotEmpty() == true){
+                    prevSentAudio?.delete()
                 }
 
             } else{
@@ -126,33 +129,66 @@ class MainActivity : AppCompatActivity() {
         txtSent = findViewById(R.id.txtSent)
         btnInference = findViewById(R.id.btnPredict)
         btnInference.setOnClickListener {
+
             if (fileName.path.isNotEmpty()){
                 Thread {
                     val ttt = googlestt.getSTTText(fileName.path)
                     Thread {
-                        googlestt.getResponseClovaStudio(ttt){ responseFromNLU->
-                            Thread{
-                                val time = android.text.format.Time()
-                                time.setToNow()
-                                audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
-                                prevSentAudio = fileName
-                                Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-                                Log.d("audioFilePath", audioFilePath)
-                                googlestt.googletts(audioFilePath, responseFromNLU)
-                                if (prevRecAudio.isNotEmpty()){
-                                    val ff = File(prevRecAudio)
-                                    ff.delete()
-                                }
-
-                            }.start()
+                        if(radioGroupLM.checkedRadioButtonId==R.id.radBtnNaverClova){
                             runOnUiThread {
-                                txtSent.text ="Sent: " + ttt
-                                txtReceived.text = "Received: " + responseFromNLU
-//                                Toast.makeText(this, "The audio saved on: $audioFilePath", Toast.LENGTH_SHORT).show()
-
+                                Toast.makeText(this@MainActivity, "Naver Clova has been chosen", Toast.LENGTH_SHORT).show()
                             }
 
+                            googlestt.getResponseClovaStudio(ttt){ responseFromNaverClova->
+                                Thread{
+                                    val time = android.text.format.Time()
+                                    time.setToNow()
+                                    audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
+                                    prevSentAudio = fileName
+                                    Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+                                    Log.d("audioFilePath", audioFilePath)
+                                    googlestt.googletts(audioFilePath, responseFromNaverClova)
+                                    if (prevRecAudio.isNotEmpty()){
+                                        val ff = File(prevRecAudio)
+                                        ff.delete()
+                                    }
+
+
+                                }.start()
+                                runOnUiThread {
+                                    txtSent.text ="Sent: " + ttt
+                                    txtReceived.text = "Received: " + responseFromNaverClova
+                                }
+
+                            }
+                        }else{
+                            googlestt.getResponseGPT3(ttt){ responseFromGPT3->
+                                Thread{
+                                    runOnUiThread {
+                                        Toast.makeText(this@MainActivity, "GPT3 has been chosen", Toast.LENGTH_SHORT).show()
+                                    }
+                                    val time = android.text.format.Time()
+                                    time.setToNow()
+                                    audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
+                                    prevSentAudio = fileName
+                                    Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+                                    Log.d("audioFilePath", audioFilePath)
+                                    googlestt.googletts(audioFilePath, responseFromGPT3)
+                                    if (prevRecAudio.isNotEmpty()){
+                                        val ff = File(prevRecAudio)
+                                        ff.delete()
+                                    }
+
+                                }.start()
+                                runOnUiThread {
+                                    txtSent.text ="Sent: " + ttt
+                                    txtReceived.text = "Received: " + responseFromGPT3
+                                }
+
+                            }
                         }
+
+
 
 
                     }.start()

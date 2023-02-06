@@ -12,9 +12,11 @@ import com.google.cloud.texttospeech.v1.*
 import com.google.protobuf.ByteString
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.*
+import kotlinx.serialization.json.Json
 
 
 class GoogleServices(assetManager: AssetManager ) {
@@ -36,6 +38,7 @@ class GoogleServices(assetManager: AssetManager ) {
     }
 
     private var responseText = ""
+    private var responseGPT3 = ""
     private val oauthKeyName = "credentials/caremeta-daea7ac2a8c7.json"
     private val inputStream = assetManager.open(oauthKeyName)
     private val oauthKey = readFromInputStream(inputStream)
@@ -99,9 +102,65 @@ class GoogleServices(assetManager: AssetManager ) {
             out.close()
 
         }
+        speechClient.close()
     }
 
-    fun getResponseGPT3(){
+    fun getResponseGPT3(inputText: String, callback: (String) -> Unit){
+        val API_KEY = "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"
+        val host = "api.openai.com"
+//    val prompt = "Hello, I'd like to have a conversation with you."
+        val prompt = """
+        {
+          "model": "text-curie-001",
+          "prompt": "\n\nHuman:$inputText\nAI:",
+          "max_tokens": 150,
+          "temperature": 0,
+          "top_p": 1,
+          "frequency_penalty":0,
+          "presence_penalty":0.6,
+          "stop":  ["\nHuman:", "\nAI:"]
+        }
+    """
+        val url = "https://$host/v1/completions"
+        val client = OkHttpClient()
+        val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), prompt)
+
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .addHeader("Authorization", "Bearer $API_KEY")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                println("Request failed: $e")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseCode = response.code
+                val responseMessage = response.message
+                val responseBody = response.body?.source()
+                if (responseCode != 200 || responseBody == null) {
+                    Log.e("GPT3 Code Err: ", "$responseCode $responseMessage: $responseBody")
+
+                }
+                try {
+                    val json = JSONObject(responseBody!!.readUtf8())
+                    val result = json.get("choices")
+                    Log.d("GPT3 result", result.toString())
+                    val resultJson = JSONArray(result.toString())
+                    val text = JSONObject(resultJson.get(0).toString())
+                    val ressText = text["text"]
+                    responseGPT3 = ressText.toString().trim()
+                    Log.d("GPT3", ressText.toString())
+                } catch (e: Exception) {
+                    Log.d("GPT3 Error ",e.stackTraceToString() )
+                }
+                callback(responseGPT3)
+
+            }
+        })
 
     }
 
