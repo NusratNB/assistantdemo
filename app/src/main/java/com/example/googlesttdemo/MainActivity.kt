@@ -151,6 +151,11 @@ class MainActivity : AppCompatActivity() {
             if (fileName.path.isNotEmpty()){
                 Thread {
                     val ttt = googlestt.getSTTText(fileName.path)
+                    Log.d("ddd googlestt", ttt)
+                    runOnUiThread {
+                        txtSent.text ="Sent: " + ttt
+                        txtReceived.text = "Received: Not received yet..."
+                    }
                     Thread {
                         if(radioGroupLM.checkedRadioButtonId==R.id.radBtnNaverClova){
 
@@ -184,9 +189,13 @@ class MainActivity : AppCompatActivity() {
                                     time.setToNow()
                                     audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
                                     prevSentAudio = fileName
+                                    Log.d("ddd gpt3", responseFromGPT3)
                                     Log.d("pathToSavingAudio", pathToSavingAudio.toString())
                                     Log.d("audioFilePath", audioFilePath)
+
                                     googlestt.googletts(audioFilePath, responseFromGPT3)
+                                    Log.d("ddd googletts", audioFilePath)
+
                                     if (prevRecAudio.isNotEmpty()){
                                         val ff = File(prevRecAudio)
                                         ff.delete()
@@ -194,7 +203,6 @@ class MainActivity : AppCompatActivity() {
 
                                 }.start()
                                 runOnUiThread {
-                                    txtSent.text ="Sent: " + ttt
                                     txtReceived.text = "Received: " + responseFromGPT3
                                 }
 

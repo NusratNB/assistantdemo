@@ -17,6 +17,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.*
 import kotlinx.serialization.json.Json
+import java.util.concurrent.TimeUnit
 
 
 class GoogleServices(assetManager: AssetManager ) {
@@ -123,6 +124,12 @@ class GoogleServices(assetManager: AssetManager ) {
     """
         val url = "https://$host/v1/completions"
         val client = OkHttpClient()
+        OkHttpClient.Builder()
+            .connectTimeout(45, TimeUnit.SECONDS)
+            .readTimeout(45, TimeUnit.SECONDS)
+            .writeTimeout(45, TimeUnit.SECONDS)
+//        client.setConnectTimeout(30, TimeUnit.SECONDS); // connect timeout
+//        client.setReadTimeout(30, TimeUnit.SECONDS);
         val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), prompt)
 
         val request = Request.Builder()
