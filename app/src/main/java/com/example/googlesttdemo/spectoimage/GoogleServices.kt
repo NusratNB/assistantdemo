@@ -16,7 +16,6 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.*
-import kotlinx.serialization.json.Json
 import java.util.concurrent.TimeUnit
 
 
@@ -109,7 +108,6 @@ class GoogleServices(assetManager: AssetManager ) {
     fun getResponseGPT3(inputText: String, callback: (String) -> Unit){
         val API_KEY = "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"
         val host = "api.openai.com"
-//    val prompt = "Hello, I'd like to have a conversation with you."
         val prompt = """
         {
           "model": "text-davinci-003",
@@ -123,11 +121,12 @@ class GoogleServices(assetManager: AssetManager ) {
         }
     """
         val url = "https://$host/v1/completions"
-        val client = OkHttpClient()
-        OkHttpClient.Builder()
-            .connectTimeout(45, TimeUnit.SECONDS)
-            .readTimeout(45, TimeUnit.SECONDS)
-            .writeTimeout(45, TimeUnit.SECONDS)
+        val client =OkHttpClient()
+//            .Builder()
+//            .connectTimeout(45, TimeUnit.SECONDS)
+//            .readTimeout(45, TimeUnit.SECONDS)
+//            .writeTimeout(45, TimeUnit.SECONDS)
+
 //        client.setConnectTimeout(30, TimeUnit.SECONDS); // connect timeout
 //        client.setReadTimeout(30, TimeUnit.SECONDS);
         val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), prompt)
