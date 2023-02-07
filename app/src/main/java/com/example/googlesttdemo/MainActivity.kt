@@ -1,6 +1,7 @@
 package com.example.googlesttdemo
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -14,6 +15,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.example.googlesttdemo.gpt3documentation.ParametersInfoActivity
+import com.example.googlesttdemo.gpt3settings.GPT3SettingsActivity
 import com.example.googlesttdemo.spectoimage.GoogleServices
 import com.example.googlesttdemo.spectoimage.RecordWavMaster
 import com.example.googlesttdemo.wavreader.FileFormatNotSupportedException
@@ -27,6 +30,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnRecord: Button
     private lateinit var btnPlay: Button
     private lateinit var btnInference: Button
+    private lateinit var btnInfo: Button
+    private lateinit var btnSettings: Button
     private lateinit var fullAudioPath: File
     private lateinit var pathToRecords: File
     private lateinit var pathToSavingAudio: File
@@ -72,6 +77,11 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO),200);
             requestStoragePermission()
         }
+        if(radioGroupLM.checkedRadioButtonId==R.id.radBtnNaverClova){
+            Toast.makeText(this, "Naver Clova has been chosen", Toast.LENGTH_SHORT).show()
+        }else{
+            Toast.makeText(this, "GPT3 has been chosen", Toast.LENGTH_SHORT).show()
+        }
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
         if (!pathToRecords.exists()){
             pathToRecords.mkdir()
@@ -109,11 +119,19 @@ class MainActivity : AppCompatActivity() {
         btnPlay.setOnClickListener{
             if (playingAvailable){
                 if (audioFilePath.isNotEmpty()){
+                    val assetManager = this.assets
+                    val firstFileDescriptor = assetManager.openFd("silence.mp3")
                     mediaPlayer = MediaPlayer()
-                    mediaPlayer.setDataSource(audioFilePath)
+                    mediaPlayer.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
                     mediaPlayer.prepare()
+                    mediaPlayer.setOnCompletionListener {
+                        val mediaPlayerSilence = MediaPlayer()
+                        mediaPlayerSilence.setDataSource(audioFilePath)
+                        mediaPlayerSilence.prepare()
+                        mediaPlayerSilence.start()
+                    }
                     mediaPlayer.start()
-                    prevRecAudio = audioFilePath
+
                 }
                 if (prevSentAudio?.path?.isNotEmpty() == true){
                     prevSentAudio?.delete()
@@ -135,9 +153,6 @@ class MainActivity : AppCompatActivity() {
                     val ttt = googlestt.getSTTText(fileName.path)
                     Thread {
                         if(radioGroupLM.checkedRadioButtonId==R.id.radBtnNaverClova){
-                            runOnUiThread {
-                                Toast.makeText(this@MainActivity, "Naver Clova has been chosen", Toast.LENGTH_SHORT).show()
-                            }
 
                             googlestt.getResponseClovaStudio(ttt){ responseFromNaverClova->
                                 Thread{
@@ -164,9 +179,7 @@ class MainActivity : AppCompatActivity() {
                         }else{
                             googlestt.getResponseGPT3(ttt){ responseFromGPT3->
                                 Thread{
-                                    runOnUiThread {
-                                        Toast.makeText(this@MainActivity, "GPT3 has been chosen", Toast.LENGTH_SHORT).show()
-                                    }
+
                                     val time = android.text.format.Time()
                                     time.setToNow()
                                     audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
@@ -187,23 +200,25 @@ class MainActivity : AppCompatActivity() {
 
                             }
                         }
-
-
-
-
                     }.start()
                 }.start()
-
-//
-
-
             }else{
                 Toast.makeText(this, "Record audio", Toast.LENGTH_SHORT).show()
             }
 
         }
+        btnInfo = findViewById(R.id.btnInfo)
+        btnInfo.setOnClickListener {
+            startActivity(Intent(this@MainActivity, ParametersInfoActivity::class.java))
+        }
+        btnSettings = findViewById(R.id.btnSettings)
+        btnSettings.setOnClickListener {
+            Toast.makeText(this, "Not Implemented yet", Toast.LENGTH_LONG).show()
+//            startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
+        }
 
     }
+
     @Throws(IOException::class, WavFileException::class, FileFormatNotSupportedException::class)
     fun readMagnitudeValuesFromFile(
         path: String,

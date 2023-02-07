@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".gpt3documentation.ParametersInfoActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:orientation="vertical"
+        >
+
+        <TextView
+            android:id = "@+id/tvMainInfo"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="10sp"
+            android:textSize="20sp"
+            android:gravity="center"
+            android:text = "GPT-3 API parameters info"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvModel"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "model:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvMaxTokens"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "max_tokens:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvTemperature"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "temperature:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvTopP"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "top_p:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvN"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "n:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvStream"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "stream:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvLogProbs"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "logprobs:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvStop"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "stop:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvPresencePenalty"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "presence_penalty:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvFrequencyPenalty"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "frequency_penalty:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id = "@+id/tvBestOf"
+            android:layout_width = "match_parent"
+            android:layout_height = "wrap_content"
+            android:layout_margin="5dp"
+            android:textSize="15sp"
+            android:text = "frequency_penalty:"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="5dp"
+            android:background="#000000"/>
+
+
+
+
+    </LinearLayout>
+
+</ScrollView>

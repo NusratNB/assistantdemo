@@ -111,9 +111,9 @@ class GoogleServices(assetManager: AssetManager ) {
 //    val prompt = "Hello, I'd like to have a conversation with you."
         val prompt = """
         {
-          "model": "text-curie-001",
+          "model": "text-davinci-003",
           "prompt": "\n\nHuman:$inputText\nAI:",
-          "max_tokens": 150,
+          "max_tokens": 1500,
           "temperature": 0,
           "top_p": 1,
           "frequency_penalty":0,

@@ -132,6 +132,20 @@
 
         </LinearLayout>
 
+        <Button
+            android:id="@+id/btnSettings"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Gpt3 Settings" />
+
+        <Button
+            android:id="@+id/btnInfo"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="GPT3 Parameters Info"/>
+
     </LinearLayout>
 
 </LinearLayout>
