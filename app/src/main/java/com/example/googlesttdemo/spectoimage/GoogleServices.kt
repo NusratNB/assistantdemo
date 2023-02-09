@@ -2,13 +2,15 @@ package com.example.googlesttdemo.spectoimage
 
 import android.content.res.AssetManager
 import android.util.Log
-//import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
 import com.google.cloud.speech.v1.SpeechClient
 import com.google.cloud.speech.v1.SpeechSettings
 import com.google.cloud.texttospeech.v1.*
+import com.google.cloud.translate.Translate
+import com.google.cloud.translate.TranslateOptions
+import com.google.cloud.translate.Translation
 import com.google.protobuf.ByteString
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -16,11 +18,9 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.*
-import kotlinx.serialization.json.Json
-import java.util.concurrent.TimeUnit
 
 
-class GoogleServices(assetManager: AssetManager ) {
+class GoogleServices(private val assetManager: AssetManager ) {
 
 
 
@@ -38,12 +38,14 @@ class GoogleServices(assetManager: AssetManager ) {
         return stringBuilder.toString()
     }
 
+
     private var responseText = ""
     private var responseGPT3 = ""
     private val oauthKeyName = "credentials/caremeta-daea7ac2a8c7.json"
-    private val inputStream = assetManager.open(oauthKeyName)
+    private var inputStream = assetManager.open(oauthKeyName)
     private val oauthKey = readFromInputStream(inputStream)
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
+
 
     fun getSTTText(audioURI: String): String {
 
@@ -56,7 +58,6 @@ class GoogleServices(assetManager: AssetManager ) {
             SpeechSettings.newBuilder()
                 .setCredentialsProvider { GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray())) }
                 .build())
-//        val gcsUri = "gs://cloud-samples-data/speech/brooklyn_bridge.raw"
         val config =
             RecognitionConfig.newBuilder()
                 .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
@@ -84,7 +85,7 @@ class GoogleServices(assetManager: AssetManager ) {
     fun googletts(pathToAudio: String, inputText:String){
 
         val speechClient = TextToSpeechClient.create(
-            TextToSpeechSettings.newBuilder().setCredentialsProvider { GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray())) }.build()
+            TextToSpeechSettings.newBuilder().setCredentialsProvider {  GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray()))  }.build()
         )
         val input = SynthesisInput.newBuilder().setText(inputText).build()
         val voice = VoiceSelectionParams.newBuilder()
@@ -106,6 +107,42 @@ class GoogleServices(assetManager: AssetManager ) {
         speechClient.close()
     }
 
+    fun googleTranslatorKoreanToEnglish(inputText: String): String{
+
+        inputStream = assetManager.open(oauthKeyName)
+        val myCredentials = GoogleCredentials.fromStream(inputStream)
+
+        val translateOptions = TranslateOptions.newBuilder().setCredentials(myCredentials).build()
+
+        val translate = translateOptions.service
+        val translation: Translation = translate.translate(
+            inputText,
+            Translate.TranslateOption.sourceLanguage("ko"),
+            Translate.TranslateOption.targetLanguage("en")
+        )
+        val resultText =  translation.translatedText
+
+
+        return resultText
+    }
+
+    fun googleTranslatorEnglishToKorean(inputText: String): String{
+
+        inputStream = assetManager.open(oauthKeyName)
+        val myCredentials = GoogleCredentials.fromStream(inputStream)
+
+        val translateOptions = TranslateOptions.newBuilder().setCredentials(myCredentials).build()
+
+        val translate = translateOptions.service
+        val translation: Translation = translate.translate(
+            inputText,
+            Translate.TranslateOption.sourceLanguage("en"),
+            Translate.TranslateOption.targetLanguage("ko")
+        )
+        val resultText =  translation.translatedText
+        return resultText
+    }
+
     fun getResponseGPT3(inputText: String, callback: (String) -> Unit){
         val API_KEY = "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"
         val host = "api.openai.com"
@@ -122,14 +159,9 @@ class GoogleServices(assetManager: AssetManager ) {
           "stop":  ["\nHuman:", "\nAI:"]
         }
     """
+        Log.d("ddd gpt3 prompt", prompt)
         val url = "https://$host/v1/completions"
         val client = OkHttpClient()
-        OkHttpClient.Builder()
-            .connectTimeout(45, TimeUnit.SECONDS)
-            .readTimeout(45, TimeUnit.SECONDS)
-            .writeTimeout(45, TimeUnit.SECONDS)
-//        client.setConnectTimeout(30, TimeUnit.SECONDS); // connect timeout
-//        client.setReadTimeout(30, TimeUnit.SECONDS);
         val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), prompt)
 
         val request = Request.Builder()
@@ -170,6 +202,8 @@ class GoogleServices(assetManager: AssetManager ) {
         })
 
     }
+
+
 
 
     fun getResponseClovaStudio(inputText: String, callback: (String) -> Unit){

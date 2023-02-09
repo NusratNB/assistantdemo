@@ -182,30 +182,30 @@ class MainActivity : AppCompatActivity() {
 
                             }
                         }else{
-                            googlestt.getResponseGPT3(ttt){ responseFromGPT3->
-                                Thread{
+                            val korToEng = googlestt.googleTranslatorKoreanToEnglish(ttt)
+                            Log.d("ddd korToEng", korToEng)
+                            googlestt.getResponseGPT3(korToEng){ responseFromGPT3->
+                                val engToKor = googlestt.googleTranslatorEnglishToKorean(responseFromGPT3)
+                                Log.d("ddd gpt3", responseFromGPT3)
+                                Log.d("ddd engToKor", engToKor)
 
-                                    val time = android.text.format.Time()
-                                    time.setToNow()
-                                    audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
-                                    prevSentAudio = fileName
-                                    Log.d("ddd gpt3", responseFromGPT3)
-                                    Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-                                    Log.d("audioFilePath", audioFilePath)
+                                val time = android.text.format.Time()
+                                time.setToNow()
+                                audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
+                                prevSentAudio = fileName
+                                Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+                                Log.d("audioFilePath", audioFilePath)
 
-                                    googlestt.googletts(audioFilePath, responseFromGPT3)
-                                    Log.d("ddd googletts", audioFilePath)
+                                googlestt.googletts(audioFilePath, engToKor)
+                                Log.d("ddd googletts", audioFilePath)
 
-                                    if (prevRecAudio.isNotEmpty()){
-                                        val ff = File(prevRecAudio)
-                                        ff.delete()
-                                    }
-
-                                }.start()
-                                runOnUiThread {
-                                    txtReceived.text = "Received: " + responseFromGPT3
+                                if (prevRecAudio.isNotEmpty()){
+                                    val ff = File(prevRecAudio)
+                                    ff.delete()
                                 }
-
+                                runOnUiThread {
+                                    txtReceived.text = "Received: " + engToKor
+                                }
                             }
                         }
                     }.start()
@@ -311,9 +311,4 @@ class MainActivity : AppCompatActivity() {
                     Manifest.permission.WRITE_EXTERNAL_STORAGE))
         }
     }
-
-
-
-
-
 }
