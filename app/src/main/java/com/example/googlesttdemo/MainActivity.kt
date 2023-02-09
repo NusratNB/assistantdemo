@@ -221,8 +221,8 @@ class MainActivity : AppCompatActivity() {
         }
         btnSettings = findViewById(R.id.btnSettings)
         btnSettings.setOnClickListener {
-            Toast.makeText(this, "Not Implemented yet", Toast.LENGTH_LONG).show()
-//            startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
+//            Toast.makeText(this, "Not Implemented yet", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
         }
 
     }
