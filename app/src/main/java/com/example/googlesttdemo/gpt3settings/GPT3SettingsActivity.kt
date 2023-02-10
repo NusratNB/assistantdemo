@@ -1,5 +1,6 @@
 package com.example.googlesttdemo.gpt3settings
 
+import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -28,10 +29,12 @@ class GPT3SettingsActivity : AppCompatActivity() {
     private lateinit var txtLogProbs: TextView
     private lateinit var txtPresencePenalty: TextView
     private lateinit var txtFrequencyPenalty: TextView
+    private val mPreferences by lazy {
+        getSharedPreferences("assistant_demo", MODE_PRIVATE)
+    }
 
 
-
-
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gpt3_settings)
@@ -145,12 +148,35 @@ class GPT3SettingsActivity : AppCompatActivity() {
 
             override fun onStopTrackingTouch(p0: SeekBar?) {
             }
-
         })
 
-
-
         btnSaveSettings.setOnClickListener {
+            val spModelSelectedItem = spModel.selectedItem.toString()
+            val spStreamSelectedItem = spStream.selectedItem.toString()
+            val spLogProbsSelectedItem = spLogProbs.selectedItem.toString()
+            val etMaxTokensInpText = etMaxTokens.text.toString()
+            val etNInpText = etN.text.toString()
+
+            txtModel.text = "model: $spModelSelectedItem"
+            txtMaxTokens.text = "max_tokens: $etMaxTokensInpText"
+            txtTemperature.text = "temperature: $progressValueTemperature"
+            txtTopP.text = "top_p: $progressValueTopP"
+            txtN.text = "n: $etNInpText"
+            txtStream.text = "stream: $spStreamSelectedItem"
+            txtLogProbs.text = "logprobs: $spLogProbsSelectedItem"
+            txtPresencePenalty.text = "presence_penalty: $skPresencePenaltyValue"
+            txtFrequencyPenalty.text = "frequency_penalty: $skFrequencyPenaltyValue"
+
+            Log.d("gpt3Set spModelSelectedItem", spModelSelectedItem)
+            Log.d("gpt3Set spStreamSelectedItem", spStreamSelectedItem)
+            Log.d("gpt3Set spLogProbsSelectedItem", spLogProbsSelectedItem)
+            Log.d("gpt3Set etMaxTokensInpText", etMaxTokensInpText)
+            Log.d("gpt3Set progressValueTemperature", progressValueTemperature.toString())
+            Log.d("gpt3Set progressValueTopP", progressValueTopP.toString())
+            Log.d("gpt3Set skPresencePenaltyValue", skPresencePenaltyValue.toString())
+            Log.d("gpt3Set skFrequencyPenaltyValue", skFrequencyPenaltyValue.toString())
+            Log.d("gpt3Set etNInpText", etNInpText)
+
         }
     }
 
