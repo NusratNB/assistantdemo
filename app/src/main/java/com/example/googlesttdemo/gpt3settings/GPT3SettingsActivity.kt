@@ -167,6 +167,10 @@ class GPT3SettingsActivity : AppCompatActivity() {
             txtPresencePenalty.text = "presence_penalty: $skPresencePenaltyValue"
             txtFrequencyPenalty.text = "frequency_penalty: $skFrequencyPenaltyValue"
 
+            mPreferences.edit()
+                .putString("gpt3_model", spModelSelectedItem)
+                .putString("gpt3_max_tokens", etMaxTokensInpText)
+                .apply()
             Log.d("gpt3Set spModelSelectedItem", spModelSelectedItem)
             Log.d("gpt3Set spStreamSelectedItem", spStreamSelectedItem)
             Log.d("gpt3Set spLogProbsSelectedItem", spLogProbsSelectedItem)
@@ -177,10 +181,16 @@ class GPT3SettingsActivity : AppCompatActivity() {
             Log.d("gpt3Set skFrequencyPenaltyValue", skFrequencyPenaltyValue.toString())
             Log.d("gpt3Set etNInpText", etNInpText)
 
+
         }
+
+        val gpt3Model = mPreferences.getString("gpt3_model", null)
+        if (gpt3Model != null) {
+            spModel.setSelection(gpt3ModelOptions.indexOf(gpt3Model)) // saqlangan modelni positionini aniqlab uni spinnerga set qilamiz
+        }
+
+        val gpt3MaxTokens = mPreferences.getString("gpt3_max_tokens", "")
+        etMaxTokens.setText(gpt3MaxTokens)
     }
-
-
-
 
 }
