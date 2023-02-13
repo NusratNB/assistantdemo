@@ -44,9 +44,9 @@ class MainActivity : AppCompatActivity() {
     private var audioFilePath = ""
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var radioGroupLM: RadioGroup
-
-
-
+    private val mPreferences by lazy {
+        getSharedPreferences("assistant_demo", MODE_PRIVATE)
+    }
 
     private val requestPermission: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(
@@ -72,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val googlestt = GoogleServices(assets)
         radioGroupLM = findViewById(R.id.radGroupLMType)
+        initGPT3Settings()
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO),200);
@@ -184,7 +185,8 @@ class MainActivity : AppCompatActivity() {
                         }else{
                             val korToEng = googlestt.googleTranslatorKoreanToEnglish(ttt)
                             Log.d("ddd korToEng", korToEng)
-                            googlestt.getResponseGPT3(korToEng){ responseFromGPT3->
+                            val gpt3Settings = getGPT3Settings()
+                            googlestt.getResponseGPT3(gpt3Settings, korToEng){ responseFromGPT3->
                                 val engToKor = googlestt.googleTranslatorEnglishToKorean(responseFromGPT3)
                                 Log.d("ddd gpt3", responseFromGPT3)
                                 Log.d("ddd engToKor", engToKor)
@@ -225,6 +227,38 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
         }
 
+    }
+
+    private fun initGPT3Settings(){
+        val gpt3SettingsPreferences = mPreferences.edit()
+        gpt3SettingsPreferences.putString("model", "text-curie-001")
+        gpt3SettingsPreferences.putString("max_tokens", "1000")
+        gpt3SettingsPreferences.putString("temperature", "0")
+        gpt3SettingsPreferences.putString("top_p", "1")
+        gpt3SettingsPreferences.putString("n", "1")
+        gpt3SettingsPreferences.putString("stream", "false")
+        gpt3SettingsPreferences.putString("logprobs", "null")
+        gpt3SettingsPreferences.putString("frequency_penalty", "0")
+        gpt3SettingsPreferences.putString("presence_penalty", "0.6")
+        gpt3SettingsPreferences.apply()
+    }
+
+    private fun getGPT3Settings(): Map<String, String?> {
+        val model = mPreferences.getString("model", "text-curie-001")
+        val max_tokens = mPreferences.getString("max_tokens", "1000")
+        val temperature = mPreferences.getString("temperature", "0")
+        val top_p = mPreferences.getString("top_p", "1")
+        val n = mPreferences.getString("n", "1")
+        val stream = mPreferences.getString("stream", "false")
+        val logprobs = mPreferences.getString("logprobs", "null")
+        val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
+        val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
+
+        val gpt3Settings = mapOf("model" to model, "max_tokens" to max_tokens, "temperature" to temperature,
+                        "top_p" to top_p, "n" to n, "stream" to stream, "logprobs" to logprobs,
+                        "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty)
+
+        return gpt3Settings
     }
 
     @Throws(IOException::class, WavFileException::class, FileFormatNotSupportedException::class)

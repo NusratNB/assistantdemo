@@ -143,19 +143,37 @@ class GoogleServices(private val assetManager: AssetManager ) {
         return resultText
     }
 
-    fun getResponseGPT3(inputText: String, callback: (String) -> Unit){
+    fun getResponseGPT3(gpt3Settings: Map<String, String?>, inputText: String, callback: (String) -> Unit){
         val API_KEY = "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"
         val host = "api.openai.com"
-//    val prompt = "Hello, I'd like to have a conversation with you."
+
+        val model = gpt3Settings["model"]
+        val max_tokens = gpt3Settings["max_tokens"]?.toInt()
+        val temperature = gpt3Settings["temperature"]?.toFloat()
+        val top_p = gpt3Settings["top_p"]?.toFloat()
+        val n = gpt3Settings["n"]?.toInt()
+        val stream = gpt3Settings["stream"].toBoolean()
+        val logprobs = gpt3Settings["logprobs"]
+        val frequency_penalty = gpt3Settings["frequency_penalty"]?.toFloat()
+        val presence_penalty = gpt3Settings["presence_penalty"]?.toFloat()
+        if (logprobs != "null"){
+            logprobs?.toInt()
+        }
+
+
+
         val prompt = """
         {
-          "model": "text-davinci-003",
+          "model": "$model",
           "prompt": "\n\nHuman:$inputText\nAI:",
-          "max_tokens": 1500,
-          "temperature": 0,
-          "top_p": 1,
-          "frequency_penalty":0,
-          "presence_penalty":0.6,
+          "max_tokens": $max_tokens,
+          "temperature": $temperature,
+          "top_p": $top_p,
+          "logprobs": $logprobs,
+          "n": $n,
+          "stream": $stream,
+          "frequency_penalty":$frequency_penalty,
+          "presence_penalty":$presence_penalty,
           "stop":  ["\nHuman:", "\nAI:"]
         }
     """
