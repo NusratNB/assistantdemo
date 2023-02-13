@@ -42,8 +42,9 @@ class MainActivity : AppCompatActivity() {
     private var prevSentAudio: File? = null
     private var prevRecAudio = ""
     private var audioFilePath = ""
-    private lateinit var mediaPlayer: MediaPlayer
+    private var mediaPlayer: MediaPlayer? = null
     private lateinit var radioGroupLM: RadioGroup
+    private lateinit var audioRecorder: RecordWavMaster
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
@@ -75,13 +76,8 @@ class MainActivity : AppCompatActivity() {
         initGPT3Settings()
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO),200);
-            requestStoragePermission()
-        }
-        if(radioGroupLM.checkedRadioButtonId==R.id.radBtnNaverClova){
-            Toast.makeText(this, "Naver Clova has been chosen", Toast.LENGTH_SHORT).show()
-        }else{
-            Toast.makeText(this, "GPT3 has been chosen", Toast.LENGTH_SHORT).show()
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE),200);
         }
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
         if (!pathToRecords.exists()){
@@ -93,9 +89,10 @@ class MainActivity : AppCompatActivity() {
             pathToSavingAudio.mkdir()
         }
 
-        val audioRecorder = RecordWavMaster(this, pathToRecords.toString())
+
         var recording = true
         btnRecord = findViewById(R.id.btnRecord)
+        audioRecorder = RecordWavMaster(this, pathToRecords.toString())
         btnRecord.text = "Start"
         btnRecord.setOnClickListener{
 
@@ -123,15 +120,15 @@ class MainActivity : AppCompatActivity() {
                     val assetManager = this.assets
                     val firstFileDescriptor = assetManager.openFd("silence.mp3")
                     mediaPlayer = MediaPlayer()
-                    mediaPlayer.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
-                    mediaPlayer.prepare()
-                    mediaPlayer.setOnCompletionListener {
+                    mediaPlayer!!.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
+                    mediaPlayer!!.prepare()
+                    mediaPlayer!!.setOnCompletionListener {
                         val mediaPlayerSilence = MediaPlayer()
                         mediaPlayerSilence.setDataSource(audioFilePath)
                         mediaPlayerSilence.prepare()
                         mediaPlayerSilence.start()
                     }
-                    mediaPlayer.start()
+                    mediaPlayer!!.start()
 
                 }
                 if (prevSentAudio?.path?.isNotEmpty() == true){

@@ -146,6 +146,13 @@
             android:layout_margin="5dp"
             android:text="GPT3 Parameters Info"/>
 
+        <Button
+            android:id="@+id/btnClovaSettings"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Naver Clova Settings"/>
+
     </LinearLayout>
 
 </LinearLayout>

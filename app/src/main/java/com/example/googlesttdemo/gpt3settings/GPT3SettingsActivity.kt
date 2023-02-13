@@ -83,21 +83,33 @@ class GPT3SettingsActivity : AppCompatActivity() {
 
         val gpt3ModelOptions = arrayOf("text-curie-001", "text-davinci-003",  "text-babbage-001", "text-ada-001")
         val streamOptions = arrayOf(false, true)
-        val logprobsOptions = arrayOf("null", 1, 2, 3, 4, 5)
+        val logprobsOptions = arrayOf("null", "1", "2", "3", "4", "5")
         val adapterGPT3Models = ArrayAdapter(this, android.R.layout.simple_spinner_item, gpt3ModelOptions)
         val adapterStream = ArrayAdapter(this, android.R.layout.simple_spinner_item, streamOptions)
         val adapterLogprobs = ArrayAdapter(this, android.R.layout.simple_spinner_item, logprobsOptions)
 
+        val settedModelIndex = gpt3ModelOptions.indexOf(model)
+        val settedStreamIndex = streamOptions.indexOf(stream.toBoolean())
+        val settedLogProbsIndex = logprobsOptions.indexOf(logprobs)
+
         spModel.adapter = adapterGPT3Models
+        spModel.setSelection(settedModelIndex)
         spStream.adapter = adapterStream
+        spStream.setSelection(settedStreamIndex)
+
         spLogProbs.adapter = adapterLogprobs
+        spLogProbs.setSelection(settedLogProbsIndex)
 
         skTemperature.max = 100
-        skTemperature.progress = 0
-        txtTemperature.text = "temperature: $temperature"
+        if (temperature != null) {
+            skTemperature.progress = (temperature.toFloat()*100).toInt()
+        }else{
+            skTemperature.progress = 0
+        }
+        txtTemperature.text = "temperature: ${temperature?.toFloat()}"
 
 
-        var progressValueTemperature = 0f
+        var progressValueTemperature = temperature?.toFloat()
 
         skTemperature.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -115,10 +127,14 @@ class GPT3SettingsActivity : AppCompatActivity() {
         })
 
         skTopP.max = 100
-        skTopP.progress = 0
+        if (top_p != null) {
+            skTopP.progress = (top_p.toFloat()*100).toInt()
+        }else{
+            skTopP.progress = 0
+        }
 
-        var progressValueTopP = 0f
-        txtTopP.text = "top_p: $top_p"
+        var progressValueTopP = top_p?.toFloat()
+        txtTopP.text = "top_p: ${top_p?.toFloat()}"
 
         skTopP.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -136,10 +152,16 @@ class GPT3SettingsActivity : AppCompatActivity() {
         })
 
         skPresencePenalty.max = 400
-        skPresencePenalty.progress = 0
 
-        var skPresencePenaltyValue = 0f
-        txtPresencePenalty.text = "presence_penalty: $presence_penalty"
+        if (presence_penalty != null){
+            skPresencePenalty.progress = ((presence_penalty.toFloat().plus(2.0)).times(100)).toInt()
+        } else{
+            skPresencePenalty.progress = 0
+        }
+
+
+        var skPresencePenaltyValue = presence_penalty?.toFloat()
+        txtPresencePenalty.text = "presence_penalty: ${presence_penalty?.toFloat()}"
 
         skPresencePenalty.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
             override fun onProgressChanged(p0: SeekBar?, progress: Int, p2: Boolean) {
@@ -156,11 +178,16 @@ class GPT3SettingsActivity : AppCompatActivity() {
         })
 
         skFrequencyPenalty.max = 400
-        skFrequencyPenalty.progress = 0
 
-        var skFrequencyPenaltyValue = 0f
+        if (frequency_penalty != null){
+            skFrequencyPenalty.progress = ((frequency_penalty.toFloat().plus(2.0)).times(100)).toInt()
+        } else{
+            skFrequencyPenalty.progress = 0
+        }
 
-        txtFrequencyPenalty.text = "frequency_penalty: $frequency_penalty"
+        var skFrequencyPenaltyValue = frequency_penalty?.toFloat()
+
+        txtFrequencyPenalty.text = "frequency_penalty: ${frequency_penalty?.toFloat()}"
 
         skFrequencyPenalty.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
             override fun onProgressChanged(p0: SeekBar?, progress: Int, p2: Boolean) {
@@ -174,6 +201,10 @@ class GPT3SettingsActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(p0: SeekBar?) {
             }
         })
+
+        etN.setText(n)
+        etMaxTokens.setText(max_tokens)
+
 
         txtModel.text = "model: $model"
         txtMaxTokens.text = "max_tokens: $max_tokens"
@@ -210,6 +241,8 @@ class GPT3SettingsActivity : AppCompatActivity() {
                 .putString("frequency_penalty", skFrequencyPenaltyValue.toString())
                 .putString("presence_penalty", skPresencePenaltyValue.toString())
                 .apply()
+
+            Toast.makeText(this@GPT3SettingsActivity, "Settings updated", Toast.LENGTH_SHORT).show()
 
             Log.d("gpt3Set spModelSelectedItem", spModelSelectedItem)
             Log.d("gpt3Set spStreamSelectedItem", spStreamSelectedItem)
