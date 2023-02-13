@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private var prevSentAudio: File? = null
     private var prevRecAudio = ""
     private var audioFilePath = ""
+    private var isRecorderInitilized = false
     private var mediaPlayer: MediaPlayer? = null
     private lateinit var radioGroupLM: RadioGroup
     private lateinit var audioRecorder: RecordWavMaster
@@ -93,15 +94,20 @@ class MainActivity : AppCompatActivity() {
 
         var recording = true
         btnRecord = findViewById(R.id.btnRecord)
-        audioRecorder = RecordWavMaster(this, pathToRecords.toString())
         btnRecord.text = "Start"
+        audioRecorder = RecordWavMaster()
+
         btnRecord.setOnClickListener{
+
+            if (!isRecorderInitilized){
+                audioRecorder.initRecorder(this, pathToRecords.toString())
+                isRecorderInitilized = true
+            }
 
             if (recording){
                 audioRecorder.recordWavStart()
                 btnRecord.text = "Recording"
                 recording = false
-
 
             }else{
                 audioRecorder.recordWavStop()
@@ -239,6 +245,8 @@ class MainActivity : AppCompatActivity() {
         gpt3SettingsPreferences.putString("frequency_penalty", "0")
         gpt3SettingsPreferences.putString("presence_penalty", "0.6")
         gpt3SettingsPreferences.apply()
+
+
     }
 
     private fun getGPT3Settings(): Map<String, String?> {

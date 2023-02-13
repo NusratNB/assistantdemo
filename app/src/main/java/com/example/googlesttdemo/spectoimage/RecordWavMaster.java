@@ -54,9 +54,10 @@ public class RecordWavMaster {
     short threshold = 200;
 
     /* Initializing AudioRecording MIC */
-    public RecordWavMaster(Context ctx, String path) {
-        initRecorder(ctx, path);
-    }
+
+//    public RecordWavMaster(Context ctx, String path) {
+//        initRecorder(ctx, path);
+//    }
 
     /* Get Supported Sample Rate */
     public static int getValidSampleRates() {
@@ -72,6 +73,7 @@ public class RecordWavMaster {
 
     /* Start AudioRecording */
     public void recordWavStart() {
+//        initRecorder(ctx, path);
         mIsRecording = true;
         mRecorder.startRecording();
         mRecording = getFile("raw");
@@ -101,8 +103,6 @@ public class RecordWavMaster {
         int arrLen = arr.length;
         for (peakIndex = 0; peakIndex < arrLen; peakIndex++) {
             if ((arr[peakIndex] >= thr) || (arr[peakIndex] <= -thr)) {
-                //se supera la soglia, esci e ritorna peakindex-mezzo kernel.
-
                 return peakIndex;
             }
         }
@@ -200,7 +200,7 @@ public class RecordWavMaster {
     }
 
     /* Initializing AudioRecording MIC */
-    private void initRecorder(Context ctx, String path) {
+    public void initRecorder(Context ctx, String path) {
         RECORD_WAV_PATH = path;
         SAMPLE_RATE = getValidSampleRates();
         int bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
@@ -208,9 +208,7 @@ public class RecordWavMaster {
         BUFFER_SIZE_PLAYING = bufferSize;
         mBuffer = new short[bufferSize];
 
-        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-
-        }
+        ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO);
         mRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT, bufferSize);
         new File(RECORD_WAV_PATH).mkdir();
