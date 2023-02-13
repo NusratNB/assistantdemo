@@ -184,13 +184,35 @@
             android:layout_marginTop="10dp"/>
 
 
-        <Button
-            android:id="@+id/btnSaveSettings"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center"
             android:layout_marginBottom = "20dp"
-            android:text="save settings"/>
+            android:layout_marginTop="10dp">
+
+            <Button
+                android:id="@+id/btnSaveSettings"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_margin = "5dp"
+                android:layout_marginBottom = "10dp"
+                android:text="save settings"/>
+
+
+            <Button
+                android:id="@+id/btnResetDefault"
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:layout_margin = "5dp"
+                android:text="reset default"/>
+
+
+        </LinearLayout>
+
+
+
 
 
     </LinearLayout>

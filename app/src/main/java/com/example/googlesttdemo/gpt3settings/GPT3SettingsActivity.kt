@@ -20,6 +20,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
     private lateinit var skPresencePenalty: SeekBar
     private lateinit var skFrequencyPenalty: SeekBar
     private lateinit var btnSaveSettings: Button
+    private lateinit var btnResetDefault: Button
     private lateinit var txtModel: TextView
     private lateinit var txtMaxTokens: TextView
     private lateinit var txtTemperature: TextView
@@ -49,6 +50,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         skPresencePenalty = findViewById(R.id.skPresencePenalty)
         skFrequencyPenalty = findViewById(R.id.skFrequencyPenalty)
         btnSaveSettings = findViewById(R.id.btnSaveSettings)
+        btnResetDefault = findViewById(R.id.btnResetDefault)
         txtModel = findViewById(R.id.txtModel)
         txtMaxTokens = findViewById(R.id.txtMaxTokens)
         txtTemperature = findViewById(R.id.txtTemperature)
@@ -253,6 +255,79 @@ class GPT3SettingsActivity : AppCompatActivity() {
             Log.d("gpt3Set skPresencePenaltyValue", skPresencePenaltyValue.toString())
             Log.d("gpt3Set skFrequencyPenaltyValue", skFrequencyPenaltyValue.toString())
             Log.d("gpt3Set etNInpText", etNInpText)
+
+
+        }
+        btnResetDefault.setOnClickListener {
+            val gpt3SettingsPreferences = mPreferences.edit()
+            gpt3SettingsPreferences.putString("model", "text-curie-001")
+            gpt3SettingsPreferences.putString("max_tokens", "1000")
+            gpt3SettingsPreferences.putString("temperature", "0")
+            gpt3SettingsPreferences.putString("top_p", "1")
+            gpt3SettingsPreferences.putString("n", "1")
+            gpt3SettingsPreferences.putString("stream", "false")
+            gpt3SettingsPreferences.putString("logprobs", "null")
+            gpt3SettingsPreferences.putString("frequency_penalty", "0")
+            gpt3SettingsPreferences.putString("presence_penalty", "0.6")
+            gpt3SettingsPreferences.apply()
+
+            val model = mPreferences.getString("model", "text-curie-001")
+            val max_tokens = mPreferences.getString("max_tokens", "1000")
+            val temperature = mPreferences.getString("temperature", "0")
+            val top_p = mPreferences.getString("top_p", "1")
+            val n = mPreferences.getString("n", "1")
+            val stream = mPreferences.getString("stream", "false")
+            val logprobs = mPreferences.getString("logprobs", "null")
+            val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
+            val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
+
+
+            txtModel.text = "model: $model"
+            txtMaxTokens.text = "max_tokens: $max_tokens"
+            txtN.text = "n: $n"
+            txtStream.text = "stream: $stream"
+            txtLogProbs.text = "logprobs: $logprobs"
+            txtPresencePenalty.text = "presence_penalty: ${presence_penalty?.toFloat()}"
+            txtTemperature.text = "temperature: ${temperature?.toFloat()}"
+            txtFrequencyPenalty.text = "frequency_penalty: ${frequency_penalty?.toFloat()}"
+            txtTopP.text = "top_p: ${top_p?.toFloat()}"
+
+            etN.setText(n)
+            etMaxTokens.setText(max_tokens)
+
+            if (frequency_penalty != null){
+                skFrequencyPenalty.progress = ((frequency_penalty.toFloat().plus(2.0)).times(100)).toInt()
+            } else{
+                skFrequencyPenalty.progress = 0
+            }
+
+            if (presence_penalty != null){
+                skPresencePenalty.progress = ((presence_penalty.toFloat().plus(2.0)).times(100)).toInt()
+            } else{
+                skPresencePenalty.progress = 0
+            }
+
+            if (top_p != null) {
+                skTopP.progress = (top_p.toFloat()*100).toInt()
+            }else{
+                skTopP.progress = 0
+            }
+
+            if (temperature != null) {
+                skTemperature.progress = (temperature.toFloat()*100).toInt()
+            }else{
+                skTemperature.progress = 0
+            }
+
+            val settedModelIndex = gpt3ModelOptions.indexOf(model)
+            val settedStreamIndex = streamOptions.indexOf(stream.toBoolean())
+            val settedLogProbsIndex = logprobsOptions.indexOf(logprobs)
+
+            spStream.setSelection(settedStreamIndex)
+            spModel.setSelection(settedModelIndex)
+            spLogProbs.setSelection(settedLogProbsIndex)
+
+            Toast.makeText(this@GPT3SettingsActivity, "Default settings", Toast.LENGTH_SHORT).show()
 
 
         }

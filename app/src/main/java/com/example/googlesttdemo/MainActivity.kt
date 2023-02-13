@@ -73,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val googlestt = GoogleServices(assets)
         radioGroupLM = findViewById(R.id.radGroupLMType)
-        initGPT3Settings()
+
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -87,6 +87,7 @@ class MainActivity : AppCompatActivity() {
         pathToSavingAudio = File(externalCacheDir?.absoluteFile, "SavedRecordings" )
         if (!pathToSavingAudio.exists()){
             pathToSavingAudio.mkdir()
+            initGPT3Settings()
         }
 
 
