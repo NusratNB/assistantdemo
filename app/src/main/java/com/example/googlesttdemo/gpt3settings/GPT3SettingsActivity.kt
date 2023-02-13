@@ -327,7 +327,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             spModel.setSelection(settedModelIndex)
             spLogProbs.setSelection(settedLogProbsIndex)
 
-            Toast.makeText(this@GPT3SettingsActivity, "Default settings", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@GPT3SettingsActivity, "Default settings restored", Toast.LENGTH_SHORT).show()
 
 
         }
