@@ -1,4 +1,4 @@
-package com.example.googlesttdemo.wavreader;
+package com.example.buddycareassistant.wavreader;
 
 //import com.example.mylibrary.WavFile;
 //import com.example.mylibrary.WavFileException;

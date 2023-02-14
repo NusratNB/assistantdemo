@@ -1,11 +1,11 @@
-package com.example.googlesttdemo.gpt3settings
+package com.example.buddycareassistant.gpt3settings
 
 import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
-import com.example.googlesttdemo.R
+import com.example.buddycareassistant.R
 import com.google.android.material.textfield.TextInputEditText
 
 class GPT3SettingsActivity : AppCompatActivity() {

@@ -1,4 +1,4 @@
-package com.example.googlesttdemo.wavreader;
+package com.example.buddycareassistant.wavreader;
 
 import java.io.File;
 import java.io.FileInputStream;

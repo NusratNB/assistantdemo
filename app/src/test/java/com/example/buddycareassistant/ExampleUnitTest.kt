@@ -1,4 +1,4 @@
-package com.example.googlesttdemo
+package com.example.buddycareassistant
 
 import org.junit.Test
 

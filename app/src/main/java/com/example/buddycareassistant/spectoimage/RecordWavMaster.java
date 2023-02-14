@@ -1,8 +1,7 @@
-package com.example.googlesttdemo.spectoimage;
+package com.example.buddycareassistant.spectoimage;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioRecord;

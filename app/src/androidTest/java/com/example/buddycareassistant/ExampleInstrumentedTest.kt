@@ -1,4 +1,4 @@
-package com.example.googlesttdemo
+package com.example.buddycareassistant
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

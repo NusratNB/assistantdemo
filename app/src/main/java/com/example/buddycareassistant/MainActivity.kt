@@ -1,4 +1,4 @@
-package com.example.googlesttdemo
+package com.example.buddycareassistant
 
 import android.Manifest
 import android.content.Intent
@@ -17,13 +17,13 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.example.googlesttdemo.gpt3documentation.ParametersInfoActivity
-import com.example.googlesttdemo.gpt3settings.GPT3SettingsActivity
-import com.example.googlesttdemo.spectoimage.GoogleServices
-import com.example.googlesttdemo.spectoimage.RecordWavMaster
-import com.example.googlesttdemo.wavreader.FileFormatNotSupportedException
-import com.example.googlesttdemo.wavreader.WavFile
-import com.example.googlesttdemo.wavreader.WavFileException
+import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
+import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
+import com.example.buddycareassistant.spectoimage.GoogleServices
+import com.example.buddycareassistant.spectoimage.RecordWavMaster
+import com.example.buddycareassistant.wavreader.FileFormatNotSupportedException
+import com.example.buddycareassistant.wavreader.WavFile
+import com.example.buddycareassistant.wavreader.WavFileException
 import java.io.File
 import java.io.IOException
 

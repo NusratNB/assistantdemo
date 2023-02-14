@@ -1,4 +1,4 @@
-package com.example.googlesttdemo.spectoimage
+package com.example.buddycareassistant.spectoimage
 
 import android.content.res.AssetManager
 import android.util.Log

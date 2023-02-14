@@ -1,8 +1,8 @@
-package com.example.googlesttdemo.spectoimage
+package com.example.buddycareassistant.spectoimage
 
-import com.example.googlesttdemo.wavreader.FileFormatNotSupportedException
-import com.example.googlesttdemo.wavreader.JLibrosa
-import com.example.googlesttdemo.wavreader.WavFileException
+import com.example.buddycareassistant.wavreader.FileFormatNotSupportedException
+import com.example.buddycareassistant.wavreader.JLibrosa
+import com.example.buddycareassistant.wavreader.WavFileException
 import java.io.IOException
 
 

@@ -1,4 +1,4 @@
-package com.example.googlesttdemo.wavreader;
+package com.example.buddycareassistant.wavreader;
 
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;

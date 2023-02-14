@@ -1,10 +1,10 @@
-package com.example.googlesttdemo.gpt3documentation
+package com.example.buddycareassistant.gpt3documentation
 
 import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.TextView
-import com.example.googlesttdemo.R
+import com.example.buddycareassistant.R
 
 class ParametersInfoActivity : AppCompatActivity() {
 
