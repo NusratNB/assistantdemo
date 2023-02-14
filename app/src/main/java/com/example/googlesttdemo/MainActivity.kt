@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaPlayer
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -12,6 +13,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -69,6 +71,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -158,7 +161,7 @@ class MainActivity : AppCompatActivity() {
                     val ttt = googlestt.getSTTText(fileName.path)
                     Log.d("ddd googlestt", ttt)
                     runOnUiThread {
-                        txtSent.text ="Sent: " + ttt
+                        txtSent.text ="Sent: $ttt"
                         txtReceived.text = "Received: Not received yet..."
                     }
                     Thread {
@@ -181,8 +184,8 @@ class MainActivity : AppCompatActivity() {
 
                                 }.start()
                                 runOnUiThread {
-                                    txtSent.text ="Sent: " + ttt
-                                    txtReceived.text = "Received: " + responseFromNaverClova
+                                    txtSent.text ="Sent: $ttt"
+                                    txtReceived.text = "Received: $responseFromNaverClova"
                                 }
 
                             }
