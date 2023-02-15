@@ -208,7 +208,7 @@ public class RecordWavMaster {
         mBuffer = new short[bufferSize];
 
         ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO);
-        mRecorder = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+        mRecorder = new AudioRecord(MediaRecorder.AudioSource.DEFAULT, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT, bufferSize);
         new File(RECORD_WAV_PATH).mkdir();
 

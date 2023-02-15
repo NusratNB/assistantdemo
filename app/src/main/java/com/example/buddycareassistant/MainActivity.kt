@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.widget.Button
 import android.widget.RadioGroup
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private lateinit var radioGroupLM: RadioGroup
     private lateinit var audioRecorder: RecordWavMaster
+    private val RECORDING_TIME = 5000
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
@@ -93,12 +95,35 @@ class MainActivity : AppCompatActivity() {
             pathToSavingAudio.mkdir()
             initGPT3Settings()
         }
+        val handler = Handler()
 
 
         var recording = true
         btnRecord = findViewById(R.id.btnRecord)
         btnRecord.text = "Start"
         audioRecorder = RecordWavMaster()
+
+//        if (!isRecorderInitilized){
+//            audioRecorder.initRecorder(this, pathToRecords.toString())
+//            isRecorderInitilized = true
+//        }
+//
+//
+//        val runnable = Runnable {
+//            audioRecorder.recordWavStop()
+//            btnRecord.text = "Start"
+//            recording = true
+//            fileName = audioRecorder.audioName
+//            playingAvailable = true
+//        }
+//
+//        audioRecorder.recordWavStart()
+//        btnRecord.text = "Recording"
+//        recording = false
+//
+//        handler.postDelayed(runnable, RECORDING_TIME.toLong())
+
+
 
         btnRecord.setOnClickListener{
 
