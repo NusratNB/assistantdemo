@@ -246,15 +246,15 @@ class GPT3SettingsActivity : AppCompatActivity() {
 
             Toast.makeText(this@GPT3SettingsActivity, "Settings updated", Toast.LENGTH_SHORT).show()
 
-            Log.d("gpt3Set spModelSelectedItem", spModelSelectedItem)
-            Log.d("gpt3Set spStreamSelectedItem", spStreamSelectedItem)
-            Log.d("gpt3Set spLogProbsSelectedItem", spLogProbsSelectedItem)
-            Log.d("gpt3Set etMaxTokensInpText", etMaxTokensInpText)
-            Log.d("gpt3Set progressValueTemperature", progressValueTemperature.toString())
-            Log.d("gpt3Set progressValueTopP", progressValueTopP.toString())
-            Log.d("gpt3Set skPresencePenaltyValue", skPresencePenaltyValue.toString())
-            Log.d("gpt3Set skFrequencyPenaltyValue", skFrequencyPenaltyValue.toString())
-            Log.d("gpt3Set etNInpText", etNInpText)
+//            Log.d("gpt3Set spModelSelectedItem", spModelSelectedItem)
+//            Log.d("gpt3Set spStreamSelectedItem", spStreamSelectedItem)
+//            Log.d("gpt3Set spLogProbsSelectedItem", spLogProbsSelectedItem)
+//            Log.d("gpt3Set etMaxTokensInpText", etMaxTokensInpText)
+//            Log.d("gpt3Set progressValueTemperature", progressValueTemperature.toString())
+//            Log.d("gpt3Set progressValueTopP", progressValueTopP.toString())
+//            Log.d("gpt3Set skPresencePenaltyValue", skPresencePenaltyValue.toString())
+//            Log.d("gpt3Set skFrequencyPenaltyValue", skFrequencyPenaltyValue.toString())
+//            Log.d("gpt3Set etNInpText", etNInpText)
 
 
         }

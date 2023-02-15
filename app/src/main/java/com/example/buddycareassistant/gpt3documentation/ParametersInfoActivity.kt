@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.TextView
 import com.example.buddycareassistant.R
+//import com.example.googlesttdemo.R
 
 class ParametersInfoActivity : AppCompatActivity() {
 
