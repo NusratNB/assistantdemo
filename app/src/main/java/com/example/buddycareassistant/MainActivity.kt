@@ -7,6 +7,7 @@ import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.text.format.Time
 import android.util.Log
 import android.widget.Button
 import android.widget.RadioGroup
@@ -20,13 +21,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
 import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
-import com.example.buddycareassistant.spectoimage.GoogleServices
-import com.example.buddycareassistant.spectoimage.RecordWavMaster
-import com.example.buddycareassistant.wavreader.FileFormatNotSupportedException
-import com.example.buddycareassistant.wavreader.WavFile
-import com.example.buddycareassistant.wavreader.WavFileException
+import com.example.buddycareassistant.recordaudio.AudioRecorder
+import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import java.io.File
-import java.io.IOException
 
 
 class MainActivity : AppCompatActivity() {
@@ -48,7 +45,8 @@ class MainActivity : AppCompatActivity() {
     private var isRecorderInitilized = false
     private var mediaPlayer: MediaPlayer? = null
     private lateinit var radioGroupLM: RadioGroup
-    private lateinit var audioRecorder: RecordWavMaster
+    private lateinit var recorder: AudioRecorder
+    private lateinit var outputFile: File
     private val RECORDING_TIME = 5000
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
@@ -79,6 +77,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val googlestt = GoogleServices(assets)
         radioGroupLM = findViewById(R.id.radGroupLMType)
+        recorder = AudioRecorder(this)
+        val time = Time()
 
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
@@ -101,7 +101,6 @@ class MainActivity : AppCompatActivity() {
         var recording = true
         btnRecord = findViewById(R.id.btnRecord)
         btnRecord.text = "Start"
-        audioRecorder = RecordWavMaster()
 
 //        if (!isRecorderInitilized){
 //            audioRecorder.initRecorder(this, pathToRecords.toString())
@@ -127,25 +126,21 @@ class MainActivity : AppCompatActivity() {
 
         btnRecord.setOnClickListener{
 
-            if (!isRecorderInitilized){
-                audioRecorder.initRecorder(this, pathToRecords.toString())
-                isRecorderInitilized = true
-            }
-
             if (recording){
-                audioRecorder.recordWavStart()
+                time.setToNow()
+                val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+                outputFile = File(pathToRecords, audioName)
+                recorder.start(outputFile)
                 btnRecord.text = "Recording"
                 recording = false
 
             }else{
-                audioRecorder.recordWavStop()
+                recorder.stop()
                 btnRecord.text = "Start"
                 recording = true
-                fileName = audioRecorder.audioName
+                fileName = outputFile// audioRecorder.audioName
                 playingAvailable = true
             }
-
-
         }
         btnPlay = findViewById(R.id.btnPlay)
         btnPlay.text = "Play"
@@ -293,53 +288,6 @@ class MainActivity : AppCompatActivity() {
                         "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty)
 
         return gpt3Settings
-    }
-
-    @Throws(IOException::class, WavFileException::class, FileFormatNotSupportedException::class)
-    fun readMagnitudeValuesFromFile(
-        path: String,
-        sampleRate: Int,
-        readDurationInSeconds: Int,
-        offsetDuration: Int
-    ): Array<FloatArray>? {
-        if (!path.endsWith(".wav")) {
-            throw FileFormatNotSupportedException(
-                "File format not supported. jLibrosa currently supports audio processing of only .wav files"
-            )
-        }
-        val sourceFile = File(path)
-        var wavFile: WavFile? = null
-        wavFile = WavFile.openWavFile(sourceFile)
-        var mNumFrames = wavFile.numFrames.toInt()
-        var mSampleRate = wavFile.sampleRate.toInt()
-        val mChannels = wavFile.numChannels
-        val totalNoOfFrames = mNumFrames
-        val frameOffset = offsetDuration * mSampleRate
-        var tobeReadFrames = readDurationInSeconds * mSampleRate
-        if (tobeReadFrames > totalNoOfFrames - frameOffset) {
-            tobeReadFrames = totalNoOfFrames - frameOffset
-        }
-        if (readDurationInSeconds != -1) {
-            mNumFrames = tobeReadFrames
-            wavFile.numFrames = mNumFrames.toLong()
-        }
-        if (sampleRate != -1) {
-            mSampleRate = sampleRate
-        }
-
-        // Read the magnitude values across both the channels and save them as part of
-        // multi-dimensional array
-        val buffer = Array(mChannels) {
-            FloatArray(
-                mNumFrames
-            )
-        }
-        var readFrameCount: Long = 0
-        // for (int i = 0; i < loopCounter; i++) {
-        readFrameCount = wavFile.readFrames(buffer, mNumFrames, frameOffset)
-        // }
-        wavFile?.close()
-        return buffer
     }
 
     override fun onRequestPermissionsResult(
