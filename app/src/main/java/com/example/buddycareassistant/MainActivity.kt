@@ -86,6 +86,17 @@ class MainActivity : AppCompatActivity() {
         radioGroupLM = findViewById(R.id.radGroupLMType)
         recorder = AudioRecorder(this)
 
+        radioGroupLM.setOnCheckedChangeListener { radioGroup, id ->
+
+            if(id == R.id.radBtnGPT3) {
+                mPreferences.edit().putString("language_model", "gpt-3").apply()
+
+            } else {
+
+                mPreferences.edit().putString("language_model", "naver_clova").apply()
+
+            }
+        }
 
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
@@ -114,18 +125,14 @@ class MainActivity : AppCompatActivity() {
             assistantDemoHelper()
         }
 
-//        audioRecorder.recordWavStart()
-//        btnRecord.text = "Recording"
-//        recording = false
-            //        enableVoiceRecord()
-//        time.setToNow()
-//        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-//        outputFile = File(pathToRecords, audioName)
-//        recorder.start(outputFile)
-//        btnRecord.text = "Recording"
-//        recording = false
+        time.setToNow()
+        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+        outputFile = File(pathToRecords, audioName)
+        recorder.start(outputFile)
+        btnRecord.text = "Recording"
+        recording = false
 
-//        handler.postDelayed(runnable, RECORDING_TIME.toLong())
+        handler.postDelayed(runnable, RECORDING_TIME.toLong())
 
 
 
@@ -243,9 +250,14 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
         }
 
-        Handler().postDelayed({
-            checkIntent(intent)
-        }, 2000)
+        if(mPreferences.getString("language_model", "gpt-3").equals("gpt-3")){
+            radioGroupLM.check(R.id.radBtnGPT3)
+        } else {
+            radioGroupLM.check(R.id.radBtnNaverClova)
+        }
+//        Handler().postDelayed({
+//            checkIntent(intent)
+//        }, 2000)
     }
 
     private val mBluetoothScoReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -263,58 +275,58 @@ class MainActivity : AppCompatActivity() {
             )
         }
     }
+//
+//    override fun onNewIntent(intent: Intent?) {
+//        super.onNewIntent(intent)
+//        checkIntent(intent!!)
+//    }
 
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        checkIntent(intent!!)
-    }
+//    fun checkIntent(intent: Intent) {
+//        if (intent.action.equals("android.intent.action.VOICE_COMMAND"))
+//            enableVoiceRecord()
+//    }
 
-    fun checkIntent(intent: Intent) {
-        if (intent.action.equals("android.intent.action.VOICE_COMMAND"))
-            enableVoiceRecord()
-    }
+//    private fun enableVoiceRecord() {
+//        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+//        registerReceiver(mBluetoothScoReceiver, intentFilter)
+//        audioManager = applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
+//        // Start Bluetooth SCO.
+//        audioManager?.setMode(AudioManager.MODE_NORMAL)
+//        audioManager?.setBluetoothScoOn(true)
+//        audioManager?.startBluetoothSco()
+//        // Stop Speaker.
+//        audioManager?.setSpeakerphoneOn(false)
+//    }
 
-    private fun enableVoiceRecord() {
-        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
-        registerReceiver(mBluetoothScoReceiver, intentFilter)
-        audioManager = applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
-        // Start Bluetooth SCO.
-        audioManager?.setMode(AudioManager.MODE_NORMAL)
-        audioManager?.setBluetoothScoOn(true)
-        audioManager?.startBluetoothSco()
-        // Stop Speaker.
-        audioManager?.setSpeakerphoneOn(false)
-    }
-
-    private fun disableVoiceRecord() {
-//        if (isRecording) {
-//            buttonStopRecording.setEnabled(false)
-//            buttonPlayLastRecordAudio.setEnabled(true)
-//            buttonStartRecording.setEnabled(true)
-//            buttonStopPlayingRecording.setEnabled(false)
-//            // Stop Media recorder
-//            speechRecognizer.stopListening()
-//        }
+//    private fun disableVoiceRecord() {
+////        if (isRecording) {
+////            buttonStopRecording.setEnabled(false)
+////            buttonPlayLastRecordAudio.setEnabled(true)
+////            buttonStartRecording.setEnabled(true)
+////            buttonStopPlayingRecording.setEnabled(false)
+////            // Stop Media recorder
+////            speechRecognizer.stopListening()
+////        }
+////        try {
+////            unregisterReceiver(mBluetoothScoReceiver)
+////        } catch (e: Exception) {
+////        }
 //        try {
 //            unregisterReceiver(mBluetoothScoReceiver)
 //        } catch (e: Exception) {
 //        }
-        try {
-            unregisterReceiver(mBluetoothScoReceiver)
-        } catch (e: Exception) {
-        }
-        // Stop Bluetooth SCO.
-        audioManager!!.stopBluetoothSco()
-        audioManager!!.mode = AudioManager.MODE_NORMAL
-        audioManager!!.isBluetoothScoOn = false
-        // Start Speaker.
-        audioManager!!.isSpeakerphoneOn = true
-    }
+//        // Stop Bluetooth SCO.
+//        audioManager!!.stopBluetoothSco()
+//        audioManager!!.mode = AudioManager.MODE_NORMAL
+//        audioManager!!.isBluetoothScoOn = false
+//        // Start Speaker.
+//        audioManager!!.isSpeakerphoneOn = true
+//    }
 
     private fun assistantDemo() {
 
         if (recording) {
-            enableVoiceRecord()
+//            enableVoiceRecord()
             time.setToNow()
             val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
             outputFile = File(pathToRecords, audioName)
@@ -328,7 +340,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun assistantDemoHelper(){
-        disableVoiceRecord()
+//        disableVoiceRecord()
         recorder.stop()
         btnRecord.text = "Start"
         recording = true
@@ -484,6 +496,7 @@ class MainActivity : AppCompatActivity() {
         gpt3SettingsPreferences.putString("logprobs", "null")
         gpt3SettingsPreferences.putString("frequency_penalty", "0")
         gpt3SettingsPreferences.putString("presence_penalty", "0.6")
+        gpt3SettingsPreferences.putString("language_model", "gpt-3")
         gpt3SettingsPreferences.apply()
 
 
