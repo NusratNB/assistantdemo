@@ -1,8 +1,12 @@
 package com.example.buddycareassistant
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
@@ -16,13 +20,12 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
 import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
 import com.example.buddycareassistant.recordaudio.AudioRecorder
-import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import java.io.File
 
 
@@ -47,7 +50,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var radioGroupLM: RadioGroup
     private lateinit var recorder: AudioRecorder
     private lateinit var outputFile: File
+    private lateinit var googlestt: GoogleServices
+    var audioManager: AudioManager? = null
     private val RECORDING_TIME = 5000
+    val time = Time()
+    var recording = true
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
@@ -75,10 +82,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val googlestt = GoogleServices(assets)
+        googlestt = GoogleServices(assets)
         radioGroupLM = findViewById(R.id.radGroupLMType)
         recorder = AudioRecorder(this)
-        val time = Time()
+
 
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
@@ -98,49 +105,33 @@ class MainActivity : AppCompatActivity() {
         val handler = Handler()
 
 
-        var recording = true
+
         btnRecord = findViewById(R.id.btnRecord)
         btnRecord.text = "Start"
 
-//        if (!isRecorderInitilized){
-//            audioRecorder.initRecorder(this, pathToRecords.toString())
-//            isRecorderInitilized = true
-//        }
-//
-//
-//        val runnable = Runnable {
-//            audioRecorder.recordWavStop()
-//            btnRecord.text = "Start"
-//            recording = true
-//            fileName = audioRecorder.audioName
-//            playingAvailable = true
-//        }
-//
+
+        val runnable = Runnable {
+            assistantDemoHelper()
+        }
+
 //        audioRecorder.recordWavStart()
 //        btnRecord.text = "Recording"
 //        recording = false
-//
+            //        enableVoiceRecord()
+//        time.setToNow()
+//        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+//        outputFile = File(pathToRecords, audioName)
+//        recorder.start(outputFile)
+//        btnRecord.text = "Recording"
+//        recording = false
+
 //        handler.postDelayed(runnable, RECORDING_TIME.toLong())
 
 
 
         btnRecord.setOnClickListener{
-
-            if (recording){
-                time.setToNow()
-                val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-                outputFile = File(pathToRecords, audioName)
-                recorder.start(outputFile)
-                btnRecord.text = "Recording"
-                recording = false
-
-            }else{
-                recorder.stop()
-                btnRecord.text = "Start"
-                recording = true
-                fileName = outputFile// audioRecorder.audioName
-                playingAvailable = true
-            }
+           // enableVoiceRecord()
+            assistantDemo()
         }
         btnPlay = findViewById(R.id.btnPlay)
         btnPlay.text = "Play"
@@ -168,7 +159,6 @@ class MainActivity : AppCompatActivity() {
             } else{
                 Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
             }
-            btnPlay.text = "Play"
 
         }
         txtReceived = findViewById(R.id.txtReceived)
@@ -250,10 +240,237 @@ class MainActivity : AppCompatActivity() {
         }
         btnSettings = findViewById(R.id.btnSettings)
         btnSettings.setOnClickListener {
-//            Toast.makeText(this, "Not Implemented yet", Toast.LENGTH_LONG).show()
             startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
         }
 
+        Handler().postDelayed({
+            checkIntent(intent)
+        }, 2000)
+    }
+
+    private val mBluetoothScoReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
+            println("ANDROID Audio SCO state: $state")
+            if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
+                assistantDemo()
+            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {
+                assistantDemo()
+            }
+            Log.d(
+                "sssss", "state " + state + " " +
+                        audioManager!!.isBluetoothScoOn + " " + audioManager!!.isSpeakerphoneOn
+            )
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        checkIntent(intent!!)
+    }
+
+    fun checkIntent(intent: Intent) {
+        if (intent.action.equals("android.intent.action.VOICE_COMMAND"))
+            enableVoiceRecord()
+    }
+
+    private fun enableVoiceRecord() {
+        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+        registerReceiver(mBluetoothScoReceiver, intentFilter)
+        audioManager = applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
+        // Start Bluetooth SCO.
+        audioManager?.setMode(AudioManager.MODE_NORMAL)
+        audioManager?.setBluetoothScoOn(true)
+        audioManager?.startBluetoothSco()
+        // Stop Speaker.
+        audioManager?.setSpeakerphoneOn(false)
+    }
+
+    private fun disableVoiceRecord() {
+//        if (isRecording) {
+//            buttonStopRecording.setEnabled(false)
+//            buttonPlayLastRecordAudio.setEnabled(true)
+//            buttonStartRecording.setEnabled(true)
+//            buttonStopPlayingRecording.setEnabled(false)
+//            // Stop Media recorder
+//            speechRecognizer.stopListening()
+//        }
+//        try {
+//            unregisterReceiver(mBluetoothScoReceiver)
+//        } catch (e: Exception) {
+//        }
+        try {
+            unregisterReceiver(mBluetoothScoReceiver)
+        } catch (e: Exception) {
+        }
+        // Stop Bluetooth SCO.
+        audioManager!!.stopBluetoothSco()
+        audioManager!!.mode = AudioManager.MODE_NORMAL
+        audioManager!!.isBluetoothScoOn = false
+        // Start Speaker.
+        audioManager!!.isSpeakerphoneOn = true
+    }
+
+    private fun assistantDemo() {
+
+        if (recording) {
+            enableVoiceRecord()
+            time.setToNow()
+            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+            outputFile = File(pathToRecords, audioName)
+            recorder.start(outputFile)
+            btnRecord.text = "Recording"
+            recording = false
+
+        } else {
+            assistantDemoHelper()
+        }
+    }
+
+    private fun assistantDemoHelper(){
+        disableVoiceRecord()
+        recorder.stop()
+        btnRecord.text = "Start"
+        recording = true
+        fileName = outputFile// audioRecorder.audioName
+        playingAvailable = true
+
+        if (fileName.path.isNotEmpty()){
+            Thread {
+                val ttt = googlestt.getSTTText(fileName.path)
+                Log.d("ddd googlestt", ttt)
+                runOnUiThread {
+                    txtSent.text ="Sent: $ttt"
+                    txtReceived.text = "Received: Not received yet..."
+                }
+                Thread {
+                    if(radioGroupLM.checkedRadioButtonId==R.id.radBtnNaverClova){
+
+                        googlestt.getResponseClovaStudio(ttt){ responseFromNaverClova->
+//                                    Thread{
+                            val time = android.text.format.Time()
+                            time.setToNow()
+                            audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
+                            prevSentAudio = fileName
+                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+                            Log.d("audioFilePath", audioFilePath)
+                            googlestt.googletts(audioFilePath, responseFromNaverClova)
+                            if (prevRecAudio.isNotEmpty()){
+                                val ff = File(prevRecAudio)
+                                ff.delete()
+                            }
+
+
+//                                    }.start()
+                            runOnUiThread {
+                                txtSent.text ="Sent: $ttt"
+                                txtReceived.text = "Received: $responseFromNaverClova"
+                            }
+                            playAudio()
+
+                        }
+
+                    }else{
+                        val korToEng = googlestt.googleTranslatorKoreanToEnglish(ttt)
+                        Log.d("ddd korToEng", korToEng)
+                        val gpt3Settings = getGPT3Settings()
+                        googlestt.getResponseGPT3(gpt3Settings, korToEng){ responseFromGPT3->
+                            val engToKor = googlestt.googleTranslatorEnglishToKorean(responseFromGPT3)
+                            Log.d("ddd gpt3", responseFromGPT3)
+                            Log.d("ddd engToKor", engToKor)
+
+                            val time = android.text.format.Time()
+                            time.setToNow()
+                            audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
+                            prevSentAudio = fileName
+                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+                            Log.d("audioFilePath", audioFilePath)
+
+                            googlestt.googletts(audioFilePath, engToKor)
+                            Log.d("ddd googletts", audioFilePath)
+
+                            if (prevRecAudio.isNotEmpty()){
+                                val ff = File(prevRecAudio)
+                                ff.delete()
+                            }
+                            runOnUiThread {
+                                txtReceived.text = "Received: " + engToKor
+                            }
+                            playAudio()
+                        }
+
+
+                    }
+//                            Thread{
+//                                if (playingAvailable){
+//                                    Log.d("rrrr playingAvailable", playingAvailable.toString())
+//                                    Log.d("rrrr audioFilePath", audioFilePath)
+//                                    if (audioFilePath.isNotEmpty()){
+//                                        Log.d("rrrr audioFilePath", audioFilePath)
+//                                        val assetManager = this.assets
+//                                        val firstFileDescriptor = assetManager.openFd("silence.mp3")
+//                                        mediaPlayer = MediaPlayer()
+//                                        mediaPlayer!!.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
+//                                        mediaPlayer!!.prepare()
+//                                        mediaPlayer!!.setOnCompletionListener {
+//                                            val mediaPlayerSilence = MediaPlayer()
+//                                            mediaPlayerSilence.setDataSource(audioFilePath)
+//                                            mediaPlayerSilence.prepare()
+//                                            mediaPlayerSilence.start()
+//                                        }
+//                                        mediaPlayer!!.start()
+//
+//                                    }
+//                                    if (prevSentAudio?.path?.isNotEmpty() == true){
+//                                        prevSentAudio?.delete()
+//                                    }
+//
+//                                } else{
+//                                    Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
+//                                }
+//                            }.start()
+
+
+                }.start()
+
+            }.start()
+        }else{
+            Toast.makeText(this, "Record audio", Toast.LENGTH_SHORT).show()
+        }
+
+
+    }
+
+
+
+
+    private fun playAudio(){
+        if (playingAvailable){
+            Log.d("rrrr playingAvailable", playingAvailable.toString())
+            Log.d("rrrr audioFilePath", audioFilePath)
+            if (audioFilePath.isNotEmpty()){
+                Log.d("rrrr audioFilePath", audioFilePath)
+                val assetManager = this.assets
+                val firstFileDescriptor = assetManager.openFd("silence.mp3")
+                mediaPlayer = MediaPlayer()
+                mediaPlayer!!.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
+                mediaPlayer!!.prepare()
+                mediaPlayer!!.setOnCompletionListener {
+                    val mediaPlayerSilence = MediaPlayer()
+                    mediaPlayerSilence.setDataSource(audioFilePath)
+                    mediaPlayerSilence.prepare()
+                    mediaPlayerSilence.start()
+                }
+                mediaPlayer!!.start()
+
+            }
+            if (prevSentAudio?.path?.isNotEmpty() == true){
+                prevSentAudio?.delete()
+            }
+
+        } else{
+            Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun initGPT3Settings(){
@@ -304,27 +521,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showRationalDialog( title: String, message: String){
-        val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-        builder.setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("Cancel"){ dialog, _->
-                dialog.dismiss()
-            }
-        builder.create().show()
-    }
-    private fun requestStoragePermission(){
-        if (ActivityCompat.shouldShowRequestPermissionRationale(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE)
-        ){
-            showRationalDialog("Storage Permission",
-                "Need permission for storage")
-        }else{
-            requestPermission.launch(
-                arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE))
-        }
-    }
 }
