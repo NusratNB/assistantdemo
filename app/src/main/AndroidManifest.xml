@@ -3,14 +3,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.buddycareassistant">
 
+
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+
 
     <application
         android:allowBackup="true"
@@ -23,40 +30,33 @@
         android:theme="@style/Theme.GoogleSTTDemo"
         tools:targetApi="31">
         <activity
+            android:name="com.example.buddycareassistant.bluetoothcontrol.BluetoothControlActivity"
+            android:exported="false" />
+        <activity
             android:name="com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity"
             android:exported="false" />
         <activity
             android:name="com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity"
             android:exported="false" />
         <activity
-            android:launchMode="singleInstance"
             android:name="com.example.buddycareassistant.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <action android:name="android.intent.action.VOICE_COMMAND" />
 
-                <action
-                    android:name="android.intent.action.ASSIST" />
-
-                <action
-                    android:name="android.intent.action.VOICE_COMMAND" />
-
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-
             <intent-filter>
+                <action android:name="android.speech.action.VOICE_SEARCH_HANDS_FREE" />
 
-                <action
-                    android:name="android.speech.action.VOICE_SEARCH_HANDS_FREE" />
-
-                <category
-                    android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
     </application>

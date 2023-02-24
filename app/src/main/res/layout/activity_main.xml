@@ -153,6 +153,13 @@
             android:layout_margin="5dp"
             android:text="Naver Clova Settings"/>
 
+        <Button
+            android:id="@+id/btnBluetoothControl"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="Bluetooth Control Test"/>
+
     </LinearLayout>
 
 </LinearLayout>

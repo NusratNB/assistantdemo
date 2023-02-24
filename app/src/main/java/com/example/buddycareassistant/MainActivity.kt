@@ -22,6 +22,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.example.buddycareassistant.bluetoothcontrol.BluetoothControlActivity
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
 import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnInference: Button
     private lateinit var btnInfo: Button
     private lateinit var btnSettings: Button
+    private lateinit var btnBluetoothControl: Button
     private lateinit var fullAudioPath: File
     private lateinit var pathToRecords: File
     private lateinit var pathToSavingAudio: File
@@ -82,7 +84,8 @@ class MainActivity : AppCompatActivity() {
         }
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS),200);
+                Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION),200);
         }
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
         if (!pathToRecords.exists()){
@@ -94,6 +97,11 @@ class MainActivity : AppCompatActivity() {
             pathToSavingAudio.mkdir()
             initGPT3Settings()
         }
+        btnBluetoothControl = findViewById(R.id.btnBluetoothControl)
+        btnBluetoothControl.setOnClickListener {
+            startActivity(Intent(this@MainActivity, BluetoothControlActivity::class.java))
+        }
+
         handler = Handler()
         btnRecord = findViewById(R.id.btnRecord)
         btnRecord.text = "Start"
