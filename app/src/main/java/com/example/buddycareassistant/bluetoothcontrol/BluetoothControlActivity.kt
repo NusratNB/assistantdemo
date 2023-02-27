@@ -7,17 +7,15 @@ import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageManager
-import androidx.appcompat.app.AppCompatActivity
+import android.media.AudioManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.buddycareassistant.R
+import com.example.buddycareassistant.recordaudio.AudioRecorder
 import java.io.IOException
 import java.util.*
 
@@ -26,18 +24,26 @@ class BluetoothControlActivity : AppCompatActivity() {
     private lateinit var btnTurnOfBluetooth: Button
     private lateinit var btnConnectBluetooth: Button
     private lateinit var btnDisconnectBluetooth: Button
-
-
+    private lateinit var btnSCOStartRecord: Button
+    private lateinit var btnSCOStopRecord: Button
+    private lateinit var btnPlayAudio: Button
     private lateinit var bluetoothAdapter: BluetoothAdapter
+    private lateinit var audioRecorder: AudioRecorder
+    private var isRecording = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_bluetooth_control)
 
+        audioRecorder = AudioRecorder(this)
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         btnConnectBluetooth = findViewById(R.id.btnConnectBluetooth)
         btnDisconnectBluetooth = findViewById(R.id.btnDisconnectBluetooth)
         btnTurnOnBluetooth = findViewById(R.id.btnTurnOnBluetooth)
+        btnSCOStartRecord = findViewById(R.id.btnSCOStartRecord)
+        btnSCOStopRecord = findViewById(R.id.btnSCOStopRecord)
+        btnPlayAudio = findViewById(R.id.btnPlayAudio)
+
         btnTurnOnBluetooth.setOnClickListener {
             if (!bluetoothAdapter.isEnabled) {
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH)
@@ -105,4 +111,6 @@ class BluetoothControlActivity : AppCompatActivity() {
         }
 
     }
+
+
 }
