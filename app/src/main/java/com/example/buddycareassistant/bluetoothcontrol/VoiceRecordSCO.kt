@@ -6,12 +6,16 @@ import android.content.Context.AUDIO_SERVICE
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
+import android.text.format.Time
 import com.example.buddycareassistant.recordaudio.AudioRecorder
+import java.io.File
 
-class VoiceRecordSCO (private val ctx: Context){
+class VoiceRecordSCO (private val ctx: Context, private val pathToRecords: File){
     private var audioManager: AudioManager? = null
     private val audioRecorder = AudioRecorder(ctx)
+    private lateinit var outputFile: File
     private var isRecording = false
+    val time = Time()
 
 
 
@@ -49,6 +53,9 @@ class VoiceRecordSCO (private val ctx: Context){
             println("ANDROID Audio SCO state: $state")
             if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
                 isRecording = true
+                time.setToNow()
+                val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+
 //                speechRecognizer.startListening(speechRecognizerIntent)
             } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {
                 if (isRecording) {

@@ -7,8 +7,10 @@ import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Bundle
+import android.text.format.Time
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
@@ -16,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.buddycareassistant.R
 import com.example.buddycareassistant.recordaudio.AudioRecorder
+import java.io.File
 import java.io.IOException
 import java.util.*
 
@@ -29,11 +32,21 @@ class BluetoothControlActivity : AppCompatActivity() {
     private lateinit var btnPlayAudio: Button
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var audioRecorder: AudioRecorder
+    private lateinit var pathToRecords: File
     private var isRecording = false
+
+    private var audioManager: AudioManager? = null
+    private lateinit var outputFile: File
+    val time = Time()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_bluetooth_control)
+
+        pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
+        if (!pathToRecords.exists()){
+            pathToRecords.mkdir()
+        }
 
         audioRecorder = AudioRecorder(this)
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -43,6 +56,8 @@ class BluetoothControlActivity : AppCompatActivity() {
         btnSCOStartRecord = findViewById(R.id.btnSCOStartRecord)
         btnSCOStopRecord = findViewById(R.id.btnSCOStopRecord)
         btnPlayAudio = findViewById(R.id.btnPlayAudio)
+
+
 
         btnTurnOnBluetooth.setOnClickListener {
             if (!bluetoothAdapter.isEnabled) {
@@ -110,6 +125,66 @@ class BluetoothControlActivity : AppCompatActivity() {
 
         }
 
+    }
+
+    fun enableVoiceRecord() {
+        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+        this.registerReceiver( mBluetoothScoReceiver, intentFilter)
+        audioManager = this.applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager?
+        // Start Bluetooth SCO.
+        // Start Bluetooth SCO.
+        audioManager!!.mode = AudioManager.MODE_NORMAL
+        audioManager!!.isBluetoothScoOn = true
+        audioManager!!.startBluetoothSco()
+        // Stop Speaker.
+        // Stop Speaker.
+        audioManager!!.isSpeakerphoneOn = false
+
+    }
+
+    fun disableVoiceRecord() {
+        if (isRecording) {
+            btnSCOStopRecord.isEnabled = false
+            btnSCOStartRecord.isEnabled = true
+            // Stop Media recorder
+//            speechRecognizer.stopListening()
+            audioRecorder.stop()
+        }
+        try {
+            this.unregisterReceiver(mBluetoothScoReceiver)
+        } catch (e: Exception) {
+        }
+        // Stop Bluetooth SCO.
+        audioManager!!.stopBluetoothSco()
+        audioManager!!.mode = AudioManager.MODE_NORMAL
+        audioManager!!.isBluetoothScoOn = false
+        // Start Speaker.
+        audioManager!!.isSpeakerphoneOn = true
+    }
+
+    private val mBluetoothScoReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
+            println("ANDROID Audio SCO state: $state")
+            if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
+                btnSCOStartRecord.isEnabled = false
+                btnSCOStopRecord.isEnabled = true
+
+                isRecording = true
+                time.setToNow()
+                val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+                outputFile = File(pathToRecords, audioName)
+                audioRecorder.start(outputFile)
+
+//                speechRecognizer.startListening(speechRecognizerIntent)
+            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {
+                if (isRecording) {
+                    disableVoiceRecord()
+                    isRecording = false
+                }
+            }
+
+        }
     }
 
 

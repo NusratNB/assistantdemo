@@ -17,8 +17,6 @@ import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -57,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     var audioManager: AudioManager? = null
     private val RECORDING_TIME = 5000
     val time = Time()
-    var recording = true
+    var isRecorderAvailable = true
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
@@ -126,9 +124,9 @@ class MainActivity : AppCompatActivity() {
                     mediaPlayer!!.start()
 
                 }
-                if (prevSentAudio?.path?.isNotEmpty() == true){
-                    prevSentAudio?.delete()
-                }
+//                if (prevSentAudio?.path?.isNotEmpty() == true){
+//                    prevSentAudio?.delete()
+//                }
 
             } else{
                 Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
@@ -156,52 +154,148 @@ class MainActivity : AppCompatActivity() {
 //            checkIntent(intent)
 //        }, 2000)
         onNewIntent(intent)
+        checkIntent()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+        Log.d("scoTest", intent?.action.toString())
         if(intent?.action == "android.intent.action.VOICE_COMMAND") {
-            time.setToNow()
-            val runnable = Runnable {
-                assistantDemoHelper()
-            }
-            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-            outputFile = File(pathToRecords, audioName)
-            recorder.start(outputFile)
-            btnRecord.text = "Recording"
-            recording = false
+//            time.setToNow()
+//            val runnable = Runnable {
+//                assistantDemoHelper()
+//            }
+//            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+//            outputFile = File(pathToRecords, audioName)
+//            recorder.start(outputFile)
+//            btnRecord.text = "Recording"
+//            recording = false
+//
+//            handler.postDelayed(runnable, RECORDING_TIME.toLong())
 
-            handler.postDelayed(runnable, RECORDING_TIME.toLong())
+            assistantDemo()
 
 
 
-            btnRecord.setOnClickListener{
-                assistantDemo()
-            }
+//            btnRecord.setOnClickListener {
+//                assistantDemo()
+//            }
+        }
+//        checkIntent()
+    }
+
+    private fun checkIntent() {
+        if (intent.action == "android.intent.action.VOICE_COMMAND") {
+            enableVoiceRecord()
         }
     }
 
-    private fun assistantDemo() {
-
-        if (recording) {
-//            enableVoiceRecord()
+    private val mBluetoothScoReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onReceive(context: Context, intent: Intent) {
+            val state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
+            Log.d("scoTest", "ANDROID Audio SCO state: $state")
             time.setToNow()
-            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-            outputFile = File(pathToRecords, audioName)
-            recorder.start(outputFile)
+            Log.d("scoTest Time", time.format("%Y%m%d%H%M%S"))
+            if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
+//                btnSCOStartRecord.isEnabled = false
+//                btnSCOStopRecord.isEnabled = true
+
+                isRecorderAvailable = false
+                time.setToNow()
+
+                val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+                outputFile = File(pathToRecords, audioName)
+                Log.d("scoTest", "MainActivity filepath $outputFile")
+                recorder.start(outputFile)
+//                recorder.startRecording(outputFile)
+
+
+//                speechRecognizer.startListening(speechRecognizerIntent)
+            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {
+                if (!isRecorderAvailable) {
+                    Log.d("scoTest", "Disconnected, disable sco")
+                    disableVoiceRecord()
+                    isRecorderAvailable = true
+                    assistantDemoHelper()
+                }
+            }
+            Log.d("scoTest", "state " + state + " " +
+                        audioManager!!.isBluetoothScoOn + " " + audioManager!!.isSpeakerphoneOn
+            )
+
+        }
+
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun enableVoiceRecord() {
+        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+        this.registerReceiver( mBluetoothScoReceiver, intentFilter)
+        audioManager = this.applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager?
+        Log.d("scoTest", "If SCO is available " + audioManager?.isBluetoothScoAvailableOffCall.toString())
+        Log.d("scoTest", "Is SCO is On " + audioManager?.isBluetoothScoOn.toString())
+        val resultAudioFocus = audioManager?.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
+        // Start Bluetooth SCO.
+        // Start Bluetooth SCO.
+        if (resultAudioFocus == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            audioManager!!.mode = AudioManager.MODE_IN_CALL
+            audioManager!!.isBluetoothScoOn = false
+            Log.d("scoTest", "AudioManager mics"+ audioManager!!.microphones)
+            audioManager!!.startBluetoothSco()
+            // Stop Speaker.
+            // Stop Speaker.
+            audioManager!!.isSpeakerphoneOn = true
+        } else{
+            Log.d("scoTest", "Audio Focus failed")
+        }
+
+
+    }
+
+    fun disableVoiceRecord() {
+        if (!isRecorderAvailable) {
+            recorder.stop()
+//            recorder.stopRecording()
+        }
+        try {
+            this.unregisterReceiver(mBluetoothScoReceiver)
+        } catch (e: Exception) {
+        }
+        // Stop Bluetooth SCO.
+        audioManager!!.stopBluetoothSco()
+        audioManager!!.mode = AudioManager.MODE_NORMAL
+        audioManager!!.isBluetoothScoOn = false
+        // Start Speaker.
+        audioManager!!.isSpeakerphoneOn = true
+    }
+
+    private fun assistantDemo() {
+//        enableVoiceRecord()
+//        btnRecord.text = "Recording"
+
+        if (isRecorderAvailable) {
+            enableVoiceRecord()
+//            time.setToNow()
+//            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+//            outputFile = File(pathToRecords, audioName)
+//            recorder.start(outputFile)
             btnRecord.text = "Recording"
-            recording = false
+//            recording = false
 
         } else {
             assistantDemoHelper()
         }
+//        checkIntent()
     }
 
     private fun assistantDemoHelper(){
+//        checkIntent()
 //        disableVoiceRecord()
         recorder.stop()
+//        recorder.stopRecording()
         btnRecord.text = "Start"
-        recording = true
+        isRecorderAvailable = true
         fileName = outputFile// audioRecorder.audioName
         playingAvailable = true
 
@@ -225,10 +319,10 @@ class MainActivity : AppCompatActivity() {
                             Log.d("pathToSavingAudio", pathToSavingAudio.toString())
                             Log.d("audioFilePath", audioFilePath)
                             googlestt.googletts(audioFilePath, responseFromNaverClova)
-                            if (prevRecAudio.isNotEmpty()){
-                                val ff = File(prevRecAudio)
-                                ff.delete()
-                            }
+//                            if (prevRecAudio.isNotEmpty()){
+//                                val ff = File(prevRecAudio)
+//                                ff.delete()
+//                            }
                             runOnUiThread {
                                 txtSent.text ="Sent: $ttt"
                                 txtReceived.text = "Received: $responseFromNaverClova"
@@ -254,10 +348,10 @@ class MainActivity : AppCompatActivity() {
                             googlestt.googletts(audioFilePath, engToKor)
                             Log.d("ddd googletts", audioFilePath)
 
-                            if (prevRecAudio.isNotEmpty()){
-                                val ff = File(prevRecAudio)
-                                ff.delete()
-                            }
+//                            if (prevRecAudio.isNotEmpty()){
+//                                val ff = File(prevRecAudio)
+//                                ff.delete()
+//                            }
                             runOnUiThread {
                                 txtReceived.text = "Received: " + engToKor
                             }
@@ -295,9 +389,9 @@ class MainActivity : AppCompatActivity() {
                 mediaPlayer!!.start()
 
             }
-            if (prevSentAudio?.path?.isNotEmpty() == true){
-                prevSentAudio?.delete()
-            }
+//            if (prevSentAudio?.path?.isNotEmpty() == true){
+//                prevSentAudio?.delete()
+//            }
 
         } else{
             Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
