@@ -14,7 +14,7 @@ import java.io.FileOutputStream
 
 class AudioRecorder(private val ctx: Context) {
 
-    private val audioSource = MediaRecorder.AudioSource.DEFAULT
+    private val audioSource = MediaRecorder.AudioSource.VOICE_CALL
     private val sampleRate = 16000
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
@@ -26,7 +26,7 @@ class AudioRecorder(private val ctx: Context) {
     @RequiresApi(Build.VERSION_CODES.O)
     fun startRecording(outputFile: File) {
 
-        recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+        recorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT)
         recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
         recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
         recorder.setOutputFile(outputFile)
