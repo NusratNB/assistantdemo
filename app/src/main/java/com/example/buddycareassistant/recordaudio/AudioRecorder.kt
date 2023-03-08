@@ -14,29 +14,30 @@ import java.io.FileOutputStream
 
 class AudioRecorder(private val ctx: Context) {
 
-    private val audioSource = MediaRecorder.AudioSource.DEFAULT
-    private val sampleRate = 16000
-    private val channelConfig = AudioFormat.CHANNEL_IN_MONO
-    private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
+    private val audioSource = MediaRecorder.AudioSource.MIC
+        private val sampleRate = 16000
+        private val channelConfig = AudioFormat.CHANNEL_IN_MONO
+        private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
 
-    private var audioRecord: AudioRecord? = null
-    private val recorder = MediaRecorder()
-    private var isRecording = false
+        private var audioRecord: AudioRecord? = null
+        private var isRecording = false
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun startRecording(outputFile: File) {
 
-        recorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT)
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-        recorder.setOutputFile(outputFile)
-        recorder.prepare()
-        recorder.start()
-    }
-    fun stopRecording() {
-        recorder.stop()
-        recorder.release()
-    }
+
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    fun startRecording(outputFile: File) {
+//
+//        recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+//        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+//        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+//        recorder.setOutputFile(outputFile)
+//        recorder.prepare()
+//        recorder.start()
+//    }
+//    fun stopRecording() {
+//        recorder.stop()
+//        recorder.release()
+//    }
 
     fun start(outputFile: File) {
         ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)

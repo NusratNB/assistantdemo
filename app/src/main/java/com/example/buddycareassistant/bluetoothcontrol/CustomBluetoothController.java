@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.CountDownTimer;
 import android.util.Log;
@@ -15,7 +14,7 @@ import android.util.Log;
 import androidx.core.app.ActivityCompat;
 
 
-public abstract class BluetoothController {
+public abstract class CustomBluetoothController {
     private Context mContext;
 
     private BluetoothAdapter mBluetoothAdapter;
@@ -34,7 +33,7 @@ public abstract class BluetoothController {
      *
      * @param context
      */
-    public BluetoothController(Context context) {
+    public CustomBluetoothController(Context context) {
         mContext = context;
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);

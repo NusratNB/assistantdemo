@@ -5,7 +5,7 @@ import android.util.Log
 
 class BluetoothControllerImpl(context: Context?) :
 
-    BluetoothController(context) {
+    CustomBluetoothController(context) {
     private val TAG = "BluetoothController"
 
     override fun onHeadsetDisconnected() {

@@ -2,6 +2,10 @@ package com.example.buddycareassistant
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothA2dp
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothProfile.A2DP
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -54,6 +58,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var outputFile: File
     private lateinit var googlestt: GoogleServices
     private lateinit var handler: Handler
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var a2dpProfile: BluetoothA2dp? = null
+    private var isA2dpReady = false
     var audioManager: AudioManager? = null
     private lateinit var bluetoothController: BluetoothControllerImpl
     private val RECORDING_TIME = 5000
@@ -88,6 +95,8 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
                 Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION),200);
         }
+
+        Log.d("scoTest", "MODIFY_AUDIO_SETTINGS: " + (ActivityCompat.checkSelfPermission(this, Manifest.permission.MODIFY_AUDIO_SETTINGS) == PackageManager.PERMISSION_GRANTED).toString())
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
         if (!pathToRecords.exists()){
             pathToRecords.mkdir()
@@ -178,29 +187,8 @@ class MainActivity : AppCompatActivity() {
         Log.d("scoTest", intent?.action.toString())
 
         if(intent?.action == "android.intent.action.VOICE_COMMAND") {
-//            time.setToNow()
-//            val runnable = Runnable {
-//                assistantDemoHelper()
-//            }
-//            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-//            outputFile = File(pathToRecords, audioName)
-//            recorder.start(outputFile)
-//            btnRecord.text = "Recording"
-//            isRecorderAvailable = false
-
-//            recording = false
-//
-//            handler.postDelayed(runnable, RECORDING_TIME.toLong())
-
-            recorder = AudioRecorder(this)
 
             assistantDemo()
-
-
-
-//            btnRecord.setOnClickListener {
-//                assistantDemo()
-//            }
         }
 //        checkIntent()
     }
@@ -214,6 +202,107 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+//    private val a2dpReceiver = object : BroadcastReceiver() {
+//        override fun onReceive(context: Context?, intent: Intent?) {
+//            Log.d("a2dp", "Current intent: " + intent?.action.toString())
+//            when (intent?.action) {
+//                BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED -> {
+//                    val state = intent.getIntExtra(BluetoothA2dp.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED)
+//                    Log.d("a2dp", "State: $state")
+//                    if (state == BluetoothProfile.STATE_CONNECTED) {
+//                        val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+//                        Log.d("a2dp", "State connected")
+//                        audioManager.isBluetoothScoOn = true
+//                        audioManager.startBluetoothSco()
+//                        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+//                        audioManager.isSpeakerphoneOn = false
+//                        startRecording()
+//                    } else {
+//                        stopRecording()
+//                    }
+//                }
+//                BluetoothA2dp.ACTION_PLAYING_STATE_CHANGED -> {
+//                    val state = intent.getIntExtra(BluetoothA2dp.EXTRA_STATE, BluetoothA2dp.STATE_NOT_PLAYING)
+//                    Log.d("a2dp", "State: $state")
+//                    if (state == BluetoothA2dp.STATE_PLAYING) {
+//                        val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+//                        Log.d("a2dp", "State connected")
+//                        audioManager.isBluetoothScoOn = true
+//                        audioManager.startBluetoothSco()
+//                        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+//                        audioManager.isSpeakerphoneOn = false
+//                        // Audio is streaming
+//                        startRecording()
+//                    } else {
+//                        // Audio streaming has stopped
+//                        stopRecording()
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    fun start() {
+//        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+//
+//        // Register a broadcast receiver to listen for A2DP connection events
+//        val filter = IntentFilter().apply {
+//            addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
+//            addAction(BluetoothA2dp.ACTION_PLAYING_STATE_CHANGED)
+//        }
+//        this.registerReceiver(a2dpReceiver, filter)
+//
+//        // Connect to the Bluetooth device
+//        bluetoothAdapter?.getProfileProxy(this, object : BluetoothProfile.ServiceListener {
+//            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
+//                if (profile == A2DP) {
+//                    a2dpProfile = proxy as BluetoothA2dp
+//                    isA2dpReady = true
+//                    Log.d("a2dp", "A2DP CONNECTED")
+//                    startRecording()
+//                }
+//            }
+//
+//            override fun onServiceDisconnected(profile: Int) {
+//                if (profile == A2DP) {
+//                    a2dpProfile = null
+//                    isA2dpReady = false
+//                    Log.d("a2dp", "A2DP DISCONNECTED")
+//                }
+//            }
+//        }, A2DP)
+//
+//    }
+//
+//    fun stop() {
+//        if (bluetoothAdapter != null && isA2dpReady) {
+//            bluetoothAdapter?.closeProfileProxy(A2DP, a2dpProfile)
+//        }
+//        this.unregisterReceiver(a2dpReceiver)
+//        stopRecording()
+//    }
+//
+//
+//    fun startRecording(){
+//        Log.d("a2dp", "Recording started")
+//        isRecorderAvailable = false
+//        time.setToNow()
+//
+//        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+//        outputFile = File(pathToRecords, audioName)
+//        recorder.start(outputFile)
+//        btnRecord.text = "Recording"
+//    }
+//
+//    fun stopRecording(){
+//        if (!isRecorderAvailable){
+//            recorder.stop()
+//            btnRecord.text = "Start"
+//            isRecorderAvailable = true
+//        }
+//
+//    }
+
     private val mBluetoothScoReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onReceive(context: Context, intent: Intent) {
@@ -226,14 +315,11 @@ class MainActivity : AppCompatActivity() {
             )
             if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
                 Log.d("scoTest", "Recording started")
-//                btnSCOStartRecord.isEnabled = false
-//                btnSCOStopRecord.isEnabled = true
                 isRecorderAvailable = false
                 time.setToNow()
 
                 val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
                 outputFile = File(pathToRecords, audioName)
-//            Log.d("scoTest", "MainActivity filepath $outputFile")
                 recorder.start(outputFile)
                 btnRecord.text = "Recording"
 
@@ -253,51 +339,35 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.S)
     @SuppressLint("WrongConstant")
     private fun enableVoiceRecord() {
-        bluetoothController.start()
-        Log.d("scoTest", "Recording started")
-//                btnSCOStartRecord.isEnabled = false
-//                btnSCOStopRecord.isEnabled = true
-        isRecorderAvailable = false
-        time.setToNow()
 
-        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-        outputFile = File(pathToRecords, audioName)
-//            Log.d("scoTest", "MainActivity filepath $outputFile")
-        recorder.start(outputFile)
-        btnRecord.text = "Recording"
-//        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
-//        this.registerReceiver( mBluetoothScoReceiver, intentFilter)
-//        audioManager = this.getSystemService(AudioManager::class.java)
-////        val devices:  List<AudioDeviceInfo> = audioManager!!.availableCommunicationDevices
-////        for (device in devices) {
-////            Log.d("scoTest", "available device: $device")
-////        }
-//        audioManager!!.mode = AudioManager.MODE_IN_COMMUNICATION
-////        audioManager!!.isBluetoothScoOn = true
-//        audioManager!!.startBluetoothSco()
-////        audioManager!!.isSpeakerphoneOn = false;
+        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
+        this.registerReceiver( mBluetoothScoReceiver, intentFilter)
+        audioManager = this.getSystemService(AudioManager::class.java)
+        audioManager!!.mode = AudioManager.STREAM_VOICE_CALL
+        audioManager!!.isBluetoothScoOn = true
+        audioManager!!.startBluetoothSco()
+
+        audioManager!!.isSpeakerphoneOn = false;
+
+
     }
 
     @SuppressLint("WrongConstant")
     fun disableVoiceRecord() {
         if (!isRecorderAvailable) {
             recorder.stop()
-//            recorder.stopRecording()
         }
-        bluetoothController.stop()
-        isRecorderAvailable = true
-        assistantDemoHelper()
+        try {
+            this.unregisterReceiver(mBluetoothScoReceiver)
+        } catch (e: Exception) {
+        }
+        // Stop Bluetooth SCO.
+        audioManager!!.mode = AudioManager.MODE_NORMAL
+        audioManager!!.isBluetoothScoOn = false
+        audioManager!!.stopBluetoothSco()
 
-//        try {
-//            this.unregisterReceiver(mBluetoothScoReceiver)
-//        } catch (e: Exception) {
-//        }
-//        // Stop Bluetooth SCO.
-//        audioManager!!.mode = AudioManager.MODE_IN_COMMUNICATION
-////        audioManager!!.isBluetoothScoOn = false
-//        audioManager!!.stopBluetoothSco()
-//        // Start Speaker.
-////        audioManager!!.isSpeakerphoneOn = true
+        // Start Speaker.
+        audioManager!!.isSpeakerphoneOn = true
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -305,8 +375,10 @@ class MainActivity : AppCompatActivity() {
 
         if (isRecorderAvailable) {
             enableVoiceRecord()
+//            start()
 
         } else {
+//            stop()
             assistantDemoHelper()
         }
     }
@@ -334,7 +406,7 @@ class MainActivity : AppCompatActivity() {
                             val time = Time()
                             time.setToNow()
                             audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
-                            prevSentAudio = fileName
+//                            prevSentAudio = fileName
                             Log.d("pathToSavingAudio", pathToSavingAudio.toString())
                             Log.d("audioFilePath", audioFilePath)
                             googlestt.googletts(audioFilePath, responseFromNaverClova)
@@ -360,7 +432,7 @@ class MainActivity : AppCompatActivity() {
                             val time = android.text.format.Time()
                             time.setToNow()
                             audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
-                            prevSentAudio = fileName
+//                            prevSentAudio = fileName
                             Log.d("pathToSavingAudio", pathToSavingAudio.toString())
                             Log.d("audioFilePath", audioFilePath)
 
