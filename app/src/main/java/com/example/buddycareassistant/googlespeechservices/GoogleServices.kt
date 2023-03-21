@@ -90,7 +90,7 @@ class GoogleServices(private val assetManager: AssetManager ) {
         val input = SynthesisInput.newBuilder().setText(inputText).build()
         val voice = VoiceSelectionParams.newBuilder()
             .setLanguageCode("ko-KR")
-            .setSsmlGender(SsmlVoiceGender.NEUTRAL)
+            .setSsmlGender(SsmlVoiceGender.FEMALE)
             .build()
 
         val audioConfig = AudioConfig.newBuilder()

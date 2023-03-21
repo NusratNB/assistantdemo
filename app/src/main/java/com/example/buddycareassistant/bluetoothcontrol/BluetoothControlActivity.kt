@@ -34,6 +34,7 @@ class BluetoothControlActivity : AppCompatActivity() {
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var pathToRecords: File
     private var isRecording = false
+    private lateinit var uuid: UUID
 
     private var audioManager: AudioManager? = null
     private lateinit var outputFile: File
@@ -79,25 +80,32 @@ class BluetoothControlActivity : AppCompatActivity() {
 
 // Display the list of available Bluetooth devices in a RecyclerView or ListView
 
-            if (bluetoothAdapter.scanMode != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-                val discoverableIntent =
-                    Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-                        putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
-                    }
-                startActivity(discoverableIntent)
+//            if (bluetoothAdapter.scanMode != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+//                val discoverableIntent =
+//                    Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
+//                        putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
+//                    }
+//                startActivity(discoverableIntent)
+//            }
+            val deviceName = "DT AudioBE41" // Replace with the name of the device you want to connect to
+            val targetDeviceName = "ZS39(ID-0154)"
+            val targetDeviceMac = "78:02:B7:F3:01:54"
+            val targetDevice = bluetoothAdapter.getRemoteDevice(targetDeviceMac)
+            if (targetDevice.bondState == BluetoothDevice.BOND_NONE) {
+                targetDevice.createBond()
             }
-            val deviceName = "QS39(ID-6370)" // Replace with the name of the device you want to connect to
             val devices = bluetoothAdapter.bondedDevices
             var selectedDevice: BluetoothDevice? = null
             for (device in devices) {
 //                device.uuids
                 Log.d("devices ${device.name}", "MAC: ${device.address} ")
-                if (device.name == deviceName) {
+                if (device.name == targetDeviceName) {
                     selectedDevice = device
                     if (device.uuids.isNotEmpty()){
                         for (uu in selectedDevice.uuids){
                             Log.d("devices $selectedDevice", uu.toString())
                         }
+                        uuid = UUID.fromString(selectedDevice?.uuids?.get(0).toString())
 
                     }
                     else{
@@ -106,7 +114,9 @@ class BluetoothControlActivity : AppCompatActivity() {
                     break
                 }
             }
-            val uuid = UUID.fromString(selectedDevice?.uuids?.get(0).toString())
+
+
+
             val socket: BluetoothSocket? = try {
                 selectedDevice?.createRfcommSocketToServiceRecord(uuid)
             } catch (e: IOException) {
