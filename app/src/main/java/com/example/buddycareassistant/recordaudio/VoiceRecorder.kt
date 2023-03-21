@@ -43,6 +43,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             thread = Thread(ProcessVoice())
             thread!!.start()
             vad!!.start()
+//            writeAudioDataToFile(outputFile)
             Thread {
                 writeAudioDataToFile(outputFile)
             }.start()
@@ -115,6 +116,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 Log.d("vadTest", "buffer size: " + buffer.size)
                 audioRecord!!.read(buffer, 0, buffer.size)
                 detectSpeech(buffer)
+//                writeAudioDataToFile(outputFile)
             }
         }
 

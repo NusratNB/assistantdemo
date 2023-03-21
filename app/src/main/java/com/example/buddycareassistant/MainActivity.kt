@@ -240,7 +240,8 @@ class MainActivity : AppCompatActivity() {
 
                 val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
                 outputFile = File(pathToRecords, audioName)
-                recorder.start(outputFile)
+//                recorder.start(outputFile)
+                voiceRecorder.start(outputFile)
                 btnRecord.text = "Recording"
 
 
@@ -304,7 +305,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun assistantDemoHelper(){
-        recorder.stop()
+//        recorder.stop()
+        voiceRecorder.stop()
         btnRecord.text = "Start"
         isRecorderAvailable = true
         fileName = outputFile// audioRecorder.audioName
