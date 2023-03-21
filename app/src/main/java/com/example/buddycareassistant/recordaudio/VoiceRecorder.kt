@@ -12,6 +12,7 @@ import com.konovalov.vad.Vad
 import com.konovalov.vad.VadConfig
 import com.konovalov.vad.VadListener
 import java.io.File
+import java.io.FileOutputStream
 
 /**
  * Created by George Konovalov on 11/16/2019.
@@ -21,9 +22,11 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
     private var audioRecord: AudioRecord? = null
     private var thread: Thread? = null
     private var isListening = false
+    private var bufferSize = 0
 
     init {
         vad = Vad(config)
+
     }
 
     fun updateConfig(config: VadConfig?) {
@@ -40,6 +43,9 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             thread = Thread(ProcessVoice())
             thread!!.start()
             vad!!.start()
+            Thread {
+                writeAudioDataToFile(outputFile)
+            }.start()
         } else {
             Log.w(TAG, "Failed start Voice Recorder!")
         }
@@ -124,6 +130,19 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 }
             })
         }
+    }
+
+    private fun writeAudioDataToFile(outputFile: File) {
+        bufferSize = (vad?.config?.frameSize?.value )!! * numberOfChannels * 2
+        val data = ByteArray(bufferSize)
+        val outputStream = FileOutputStream(outputFile)
+        while (isListening) {
+            val read = audioRecord?.read(data, 0, bufferSize) ?: 0
+            if (read > 0) {
+                outputStream.write(data, 0, read)
+            }
+        }
+        outputStream.close()
     }
 
     companion object {
