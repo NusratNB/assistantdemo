@@ -275,9 +275,9 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("WrongConstant")
     fun disableVoiceRecord() {
-        if (!isRecorderAvailable) {
-            recorder.stop()
-        }
+//        if (!isRecorderAvailable) {
+//            recorder.stop()
+//        }
         try {
             this.unregisterReceiver(mBluetoothScoReceiver)
         } catch (e: Exception) {
