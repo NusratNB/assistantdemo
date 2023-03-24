@@ -23,12 +23,14 @@ import java.util.concurrent.LinkedBlockingQueue
 class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
     private val vad: Vad?
     private var audioRecord: AudioRecord? = null
+    private var audioRecordForSaving: AudioRecord? = null
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private var thread: Thread? = null
     private var isListening = false
     private var bufferSize = 0
     @Volatile
     private var isRecording = false
+    private var minBufferSizeForAudioSaving = -2
     private val numberOfChannels = 1
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     private var outputFile: File? = null
@@ -41,20 +43,23 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
     fun start(outputFile: File) {
         stop()
 
+        audioRecordForSaving = createAudioRecordForSaving()
         audioRecord = createAudioRecord()
         if (audioRecord != null) {
             isListening = true
             audioRecord!!.startRecording()
+            audioRecordForSaving!!.startRecording()
             thread = Thread(ProcessVoice())
             thread!!.start()
             vad!!.start()
             isRecording = true
             this@VoiceRecorder.outputFile = outputFile
-            Thread(Runnable {
-                writeAudioDataToFile(outputFile)
-            }).start()
+
 //            Thread(AudioDataWriter()).start()
-//            writeAudioDataToFile(outputFile)
+            Thread{
+                writeAudioDataToFile(outputFile)
+            }.start()
+
 
         } else {
             Log.w(TAG, "Failed start Voice Recorder!")
@@ -75,8 +80,15 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             }
             audioRecord = null
         }
+        if (audioRecordForSaving != null){
+            try {
+                audioRecordForSaving!!.release()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error stop AudioRecord for saving file ", e)
+            }
+            audioRecordForSaving = null
+        }
         vad?.stop()
-        audioDataQueue.clear()
         isRecording = false
     }
 
@@ -98,28 +110,49 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 PCM_ENCODING_BIT,
                 minBufSize
             )
-            if (audioRecord.state == AudioRecord.STATE_INITIALIZED) {
-                return audioRecord
-            } else {
-                audioRecord.release()
-            }
+            return audioRecord
+//            if (audioRecord.state == AudioRecord.STATE_INITIALIZED) {
+//                return audioRecord
+//            } else {
+//                audioRecord.release()
+//            }
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Error can't create AudioRecord ", e)
         }
         return null
     }
+
+    private fun createAudioRecordForSaving(): AudioRecord?{
+        try {
+            minBufferSizeForAudioSaving = bufferSizeForAudioSaving()
+            if (minBufferSizeForAudioSaving == AudioRecord.ERROR_BAD_VALUE){
+                return null
+            }
+            ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
+            val audioRecordForSaving = AudioRecord(MediaRecorder.AudioSource.MIC,
+                vad!!.config.sampleRate.value,
+                PCM_CHANNEL,
+                PCM_ENCODING_BIT,
+                minBufferSizeForAudioSaving)
+
+            return audioRecordForSaving
+        }catch (e: IllegalArgumentException){
+            Log.e(TAG, "Error can't create AudioRecord for saving Audio file", e)
+        }
+        return null
+    }
+
+
     private inner class ProcessVoice : Runnable {
         override fun run() {
-//            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
+            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
             while (!Thread.interrupted() && isListening && audioRecord != null) {
-                //val buffer = ShortArray(vad!!.config.frameSize.value * numberOfChannels * 2)
-                val buffer = ShortArray(bufferSize())
+                val buffer = ShortArray(vad!!.config.frameSize.value * numberOfChannels * 2)
+//                val buffer = ShortArray(bufferSize())
                 Log.d("vadTest", "numberOfChannels: $numberOfChannels")
-                Log.d("vadTest", "buffer size: " + bufferSize())
-                audioRecord!!.read(buffer, 0, bufferSize())
+                Log.d("vadTest", "buffer size: " + buffer.size)
+                val read = audioRecord!!.read(buffer, 0, buffer.size)
                 detectSpeech(buffer)
-//                writeAudioData(buffer)
-                outputFile?.let { writeAudioDataToFile(it) }
             }
         }
 
@@ -135,38 +168,14 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 }
             })
         }
-        private fun writeAudioDataToFile(outputFile: File) {
-            val data = ByteArray(bufferSize())
-            val outputStream = FileOutputStream(outputFile)
-            while (isListening) {
-                val read = audioRecord?.read(data, 0, bufferSize()) ?: 0
-                if (read > 0) {
-                    outputStream.write(data, 0, read)
-                }
-            }
-            outputStream.close()
-        }
-
-//        private fun writeAudioData(buffer: ShortArray) {
-//            val data = ByteBuffer.allocate(buffer.size )
-//            buffer.forEach { data.putShort(it) }
-//            try {
-//                outputFile?.let { output ->
-//                    val outputStream = FileOutputStream(output, true)
-//                    outputStream.write(data.array())
-//                    outputStream.close()
-//                }
-//            } catch (e: Exception) {
-//                Log.e(TAG, "Error writing audio data", e)
-//            }
-//        }
     }
 
+
     private fun writeAudioDataToFile(outputFile: File) {
-        val data = ByteArray(bufferSize())
+        val data = ByteArray(minBufferSizeForAudioSaving)
         val outputStream = FileOutputStream(outputFile)
         while (isListening) {
-            val read = audioRecord?.read(data, 0, bufferSize()) ?: 0
+            val read = audioRecordForSaving?.read(data, 0, minBufferSizeForAudioSaving) ?: 0
             if (read > 0) {
                 outputStream.write(data, 0, read)
             }
@@ -174,9 +183,9 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
         outputStream.close()
     }
 
-    private fun bufferSize(): Int {
+    private fun bufferSizeForAudioSaving(): Int {
 //        Log.d("scoTest", "bufferSize " + (AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 2).toString())
-        return AudioRecord.getMinBufferSize(16000, channelConfig, audioFormat)
+        return (AudioRecord.getMinBufferSize(vad!!.config.sampleRate.value, PCM_CHANNEL, PCM_ENCODING_BIT) * 2)
     }
 
     companion object {
