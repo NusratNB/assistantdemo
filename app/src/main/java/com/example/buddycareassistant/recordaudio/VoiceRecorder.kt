@@ -13,9 +13,7 @@ import com.konovalov.vad.VadConfig
 import com.konovalov.vad.VadListener
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.LinkedBlockingQueue
+import android.text.format.Time
 
 /**
  * Created by George Konovalov on 11/16/2019.
@@ -32,9 +30,11 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
     private var isRecording = false
     private var minBufferSizeForAudioSaving = -2
     private val numberOfChannels = 1
-    private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     private var outputFile: File? = null
-    private val audioDataQueue: BlockingQueue<ShortArray> = LinkedBlockingQueue()
+    val time = Time()
+    private var speechTime: Long = 0
+    private var noiseTime: Long = 0
+    private val  differenceTime= 3000
 
     init {
         vad = Vad(config)
@@ -53,9 +53,6 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             thread!!.start()
             vad!!.start()
             isRecording = true
-            this@VoiceRecorder.outputFile = outputFile
-
-//            Thread(AudioDataWriter()).start()
             Thread{
                 writeAudioDataToFile(outputFile)
             }.start()
@@ -110,12 +107,11 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 PCM_ENCODING_BIT,
                 minBufSize
             )
-            return audioRecord
-//            if (audioRecord.state == AudioRecord.STATE_INITIALIZED) {
-//                return audioRecord
-//            } else {
-//                audioRecord.release()
-//            }
+            if (audioRecord.state == AudioRecord.STATE_INITIALIZED) {
+                return audioRecord
+            } else {
+                audioRecord.release()
+            }
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Error can't create AudioRecord ", e)
         }
@@ -135,7 +131,11 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 PCM_ENCODING_BIT,
                 minBufferSizeForAudioSaving)
 
-            return audioRecordForSaving
+            if (audioRecordForSaving.state == AudioRecord.STATE_INITIALIZED) {
+                return audioRecordForSaving
+            } else {
+                audioRecordForSaving.release()
+            }
         }catch (e: IllegalArgumentException){
             Log.e(TAG, "Error can't create AudioRecord for saving Audio file", e)
         }
@@ -159,12 +159,21 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
         private fun detectSpeech(buffer: ShortArray) {
             vad!!.addContinuousSpeechListener(buffer, object : VadListener {
                 override fun onSpeechDetected() {
+                    time.setToNow()
+                    speechTime = System.currentTimeMillis()
                     Log.d("audioVolumeTest", "Speech detected")
                     Log.d("sampleRate", "sample rate: " + vad.config.sampleRate.value)
                 }
 
                 override fun onNoiseDetected() {
-                    Log.d("audioVolumeTest", "Noise detected")
+                    time.setToNow()
+                    noiseTime = System.currentTimeMillis()
+                    if ((noiseTime - speechTime).toInt() >= differenceTime && (noiseTime - speechTime) != noiseTime){
+                        stop()
+                        Log.d("audioVolumeTest", "Recording stopped")
+                        Log.d("audioVolumeTest", "Difference: " + (noiseTime - speechTime).toString())
+                    }
+                    Log.d("audioVolumeTest", "Noise detected ")
                 }
             })
         }
