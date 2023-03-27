@@ -35,6 +35,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
     private var speechTime: Long = 0
     private var noiseTime: Long = 0
     private val  differenceTime= 3000
+    var differenceNoiseAndSpeech = 0
 
     init {
         vad = Vad(config)
@@ -168,15 +169,20 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 override fun onNoiseDetected() {
                     time.setToNow()
                     noiseTime = System.currentTimeMillis()
-                    if ((noiseTime - speechTime).toInt() >= differenceTime && (noiseTime - speechTime) != noiseTime){
-                        stop()
-                        Log.d("audioVolumeTest", "Recording stopped")
-                        Log.d("audioVolumeTest", "Difference: " + (noiseTime - speechTime).toString())
-                    }
+                    differenceNoiseAndSpeech = (noiseTime - speechTime).toInt()
+//                    if ((noiseTime - speechTime).toInt() >= differenceTime && (noiseTime - speechTime) != noiseTime){
+//                        stop()
+//                        Log.d("audioVolumeTest", "Recording stopped")
+//                        Log.d("audioVolumeTest", "Difference: " + (noiseTime - speechTime).toString())
+//                    }
                     Log.d("audioVolumeTest", "Noise detected ")
                 }
             })
         }
+    }
+
+    fun getDiffTimeCondition(): Boolean {
+        return (noiseTime - speechTime) != noiseTime
     }
 
 

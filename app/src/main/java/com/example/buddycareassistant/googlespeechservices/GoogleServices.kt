@@ -160,12 +160,12 @@ class GoogleServices(private val assetManager: AssetManager ) {
             logprobs?.toInt()
         }
 
-
+//"\n\nHuman:$inputText\nAI:"
 
         val prompt = """
         {
           "model": "$model",
-          "prompt": "\n\nHuman:$inputText\nAI:",
+          "messages": [{"role": "user", "content":"$inputText"}],
           "max_tokens": $max_tokens,
           "temperature": $temperature,
           "top_p": $top_p,
@@ -178,10 +178,9 @@ class GoogleServices(private val assetManager: AssetManager ) {
         }
     """
         Log.d("ddd gpt3 prompt", prompt)
-        val url = "https://$host/v1/completions"
+        val url = "https://$host/v1/chat/completions"
         val client = OkHttpClient()
         val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), prompt)
-
         val request = Request.Builder()
             .url(url)
             .post(requestBody)
@@ -208,9 +207,10 @@ class GoogleServices(private val assetManager: AssetManager ) {
                     Log.d("GPT3 result", result.toString())
                     val resultJson = JSONArray(result.toString())
                     val text = JSONObject(resultJson.get(0).toString())
-                    val ressText = text["text"]
-                    responseGPT3 = ressText.toString().trim()
-                    Log.d("GPT3", ressText.toString())
+                    val resText = text["message"]
+                    val content = JSONObject(resText.toString())
+                    responseGPT3 = content["content"].toString().trim()
+                    Log.d("GPT3", content.toString())
                 } catch (e: Exception) {
                     Log.d("GPT3 Error ",e.stackTraceToString() )
                 }

@@ -60,12 +60,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var outputFile: File
     private lateinit var googlestt: GoogleServices
     private lateinit var handler: Handler
-    private var bluetoothAdapter: BluetoothAdapter? = null
-    private var a2dpProfile: BluetoothA2dp? = null
-    private var isA2dpReady = false
     var audioManager: AudioManager? = null
     private lateinit var bluetoothController: BluetoothControllerImpl
-    private val RECORDING_TIME = 5000
     val time = Time()
     var isRecorderAvailable = true
     private val DEFAULT_SAMPLE_RATE = VadConfig.SampleRate.SAMPLE_RATE_16K
@@ -166,6 +162,7 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
+//        Log.d("voiceRecorder", "differenceNoiseAndSpeech: ${voiceRecorder.differenceNoiseAndSpeech} getDiffTimeCondition: ${voiceRecorder.getDiffTimeCondition()}")
         txtReceived = findViewById(R.id.txtReceived)
         txtSent = findViewById(R.id.txtSent)
         btnInference = findViewById(R.id.btnPredict)
@@ -181,11 +178,6 @@ class MainActivity : AppCompatActivity() {
             recorder.stop()
             btnRecord.text = "Start"
             isRecorderAvailable = true
-//            if (!isRecorderAvailable){
-//                recorder.stop()
-//                btnRecord.text = "Start"
-//                isRecorderAvailable = true
-//            }
         }
 
         if(mPreferences.getString("language_model", "gpt-3").equals("gpt-3")){
@@ -193,11 +185,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             radioGroupLM.check(R.id.radBtnNaverClova)
         }
-//        Handler().postDelayed({
-//            checkIntent(intent)
-//        }, 2000)
         onNewIntent(intent)
-//        checkIntent()
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -210,7 +198,6 @@ class MainActivity : AppCompatActivity() {
 
             assistantDemo()
         }
-//        checkIntent()
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -240,7 +227,6 @@ class MainActivity : AppCompatActivity() {
 
                 val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
                 outputFile = File(pathToRecords, audioName)
-//                recorder.start(outputFile)
                 voiceRecorder.start(outputFile)
                 btnRecord.text = "Recording"
 
@@ -254,7 +240,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -264,7 +249,7 @@ class MainActivity : AppCompatActivity() {
         val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
         this.registerReceiver( mBluetoothScoReceiver, intentFilter)
         audioManager = this.getSystemService(AudioManager::class.java)
-        audioManager!!.mode = AudioManager.STREAM_VOICE_CALL
+        audioManager!!.mode = AudioManager.MODE_NORMAL
         audioManager!!.isBluetoothScoOn = true
         audioManager!!.startBluetoothSco()
 
@@ -275,12 +260,9 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("WrongConstant")
     fun disableVoiceRecord() {
-//        if (!isRecorderAvailable) {
-//            recorder.stop()
-//        }
         try {
             this.unregisterReceiver(mBluetoothScoReceiver)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
         // Stop Bluetooth SCO.
         audioManager!!.mode = AudioManager.MODE_NORMAL
@@ -305,7 +287,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun assistantDemoHelper(){
-//        recorder.stop()
         voiceRecorder.stop()
         btnRecord.text = "Start"
         isRecorderAvailable = true
@@ -413,7 +394,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initGPT3Settings(){
         val gpt3SettingsPreferences = mPreferences.edit()
-        gpt3SettingsPreferences.putString("model", "text-curie-001")
+        gpt3SettingsPreferences.putString("model", "gpt-4")
         gpt3SettingsPreferences.putString("max_tokens", "1000")
         gpt3SettingsPreferences.putString("temperature", "0")
         gpt3SettingsPreferences.putString("top_p", "1")
@@ -429,7 +410,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getGPT3Settings(): Map<String, String?> {
-        val model = mPreferences.getString("model", "text-curie-001")
+        val model = mPreferences.getString("model", "gpt-4")
         val max_tokens = mPreferences.getString("max_tokens", "1000")
         val temperature = mPreferences.getString("temperature", "0")
         val top_p = mPreferences.getString("top_p", "1")
