@@ -30,12 +30,13 @@ class GPT3SettingsActivity : AppCompatActivity() {
     private lateinit var txtLogProbs: TextView
     private lateinit var txtPresencePenalty: TextView
     private lateinit var txtFrequencyPenalty: TextView
+    private lateinit var tokensCheckBox: CheckBox
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
 
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint("SetTextI18n", "MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gpt3_settings)
@@ -60,9 +61,10 @@ class GPT3SettingsActivity : AppCompatActivity() {
         txtLogProbs = findViewById(R.id.txtLogProbs)
         txtPresencePenalty = findViewById(R.id.txtPresencePenalty)
         txtFrequencyPenalty = findViewById(R.id.txtFrequencyPenalty)
+        tokensCheckBox = findViewById(R.id.tokensCheckBox)
 
         val model = mPreferences.getString("model", "gpt-3.5-turbo")
-        val max_tokens = mPreferences.getString("max_tokens", "1000")
+        val max_tokens = mPreferences.getString("max_tokens", "200")
         val temperature = mPreferences.getString("temperature", "0")
         val top_p = mPreferences.getString("top_p", "1")
         val n = mPreferences.getString("n", "1")
@@ -70,6 +72,8 @@ class GPT3SettingsActivity : AppCompatActivity() {
         val logprobs = mPreferences.getString("logprobs", "null")
         val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
         val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
+        val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
+
 
         /* Default-settings
         model = 'gpt-4
@@ -214,6 +218,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         txtN.text = "n: $n"
         txtStream.text = "stream: $stream"
         txtLogProbs.text = "logprobs: $logprobs"
+        tokensCheckBox.isChecked = tokensInfo.toBoolean()
 
         btnSaveSettings.setOnClickListener {
             val spModelSelectedItem = spModel.selectedItem.toString()
@@ -243,6 +248,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
                 .putString("logprobs", spLogProbsSelectedItem)
                 .putString("frequency_penalty", skFrequencyPenaltyValue.toString())
                 .putString("presence_penalty", skPresencePenaltyValue.toString())
+                .putString("tokensCheckBox", tokensCheckBox.isChecked.toString())
                 .apply()
 
             Toast.makeText(this@GPT3SettingsActivity, "Settings updated", Toast.LENGTH_SHORT).show()
@@ -262,7 +268,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         btnResetDefault.setOnClickListener {
             val gpt3SettingsPreferences = mPreferences.edit()
             gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
-            gpt3SettingsPreferences.putString("max_tokens", "1000")
+            gpt3SettingsPreferences.putString("max_tokens", "200")
             gpt3SettingsPreferences.putString("temperature", "0")
             gpt3SettingsPreferences.putString("top_p", "1")
             gpt3SettingsPreferences.putString("n", "1")
@@ -270,10 +276,11 @@ class GPT3SettingsActivity : AppCompatActivity() {
             gpt3SettingsPreferences.putString("logprobs", "null")
             gpt3SettingsPreferences.putString("frequency_penalty", "0")
             gpt3SettingsPreferences.putString("presence_penalty", "0.6")
+            gpt3SettingsPreferences.putString("tokensCheckBox", "false")
             gpt3SettingsPreferences.apply()
 
             val model = mPreferences.getString("model", "gpt-3.5-turbo")
-            val max_tokens = mPreferences.getString("max_tokens", "1000")
+            val max_tokens = mPreferences.getString("max_tokens", "200")
             val temperature = mPreferences.getString("temperature", "0")
             val top_p = mPreferences.getString("top_p", "1")
             val n = mPreferences.getString("n", "1")
@@ -281,6 +288,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             val logprobs = mPreferences.getString("logprobs", "null")
             val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
             val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
+            val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
 
 
             txtModel.text = "model: $model"
@@ -292,6 +300,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             txtTemperature.text = "temperature: ${temperature?.toFloat()}"
             txtFrequencyPenalty.text = "frequency_penalty: ${frequency_penalty?.toFloat()}"
             txtTopP.text = "top_p: ${top_p?.toFloat()}"
+            tokensCheckBox.isChecked = tokensInfo.toBoolean()
 
             etN.setText(n)
             etMaxTokens.setText(max_tokens)

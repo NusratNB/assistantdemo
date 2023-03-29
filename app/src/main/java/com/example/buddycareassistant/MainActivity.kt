@@ -176,6 +176,7 @@ class MainActivity : AppCompatActivity() {
         }
         btnRecord.setOnClickListener {
             recorder.stop()
+//            recorder.stopRecording()
             btnRecord.text = "Start"
             isRecorderAvailable = true
         }
@@ -228,6 +229,7 @@ class MainActivity : AppCompatActivity() {
                 val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
                 outputFile = File(pathToRecords, audioName)
                 recorder.start(outputFile)
+//                recorder.startRecording(outputFile)
 //                voiceRecorder.start(outputFile)
                 btnRecord.text = "Recording"
 
@@ -290,6 +292,7 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.M)
     private fun assistantDemoHelper(){
         recorder.stop()
+//        recorder.stopRecording()
 //        voiceRecorder.stop()
         btnRecord.text = "Start"
         isRecorderAvailable = true
@@ -398,7 +401,7 @@ class MainActivity : AppCompatActivity() {
     private fun initGPT3Settings(){
         val gpt3SettingsPreferences = mPreferences.edit()
         gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
-        gpt3SettingsPreferences.putString("max_tokens", "1000")
+        gpt3SettingsPreferences.putString("max_tokens", "200")
         gpt3SettingsPreferences.putString("temperature", "0")
         gpt3SettingsPreferences.putString("top_p", "1")
         gpt3SettingsPreferences.putString("n", "1")
@@ -407,6 +410,7 @@ class MainActivity : AppCompatActivity() {
         gpt3SettingsPreferences.putString("frequency_penalty", "0")
         gpt3SettingsPreferences.putString("presence_penalty", "0.6")
         gpt3SettingsPreferences.putString("language_model", "gpt-3")
+        gpt3SettingsPreferences.putString("tokensCheckBox", "false")
         gpt3SettingsPreferences.apply()
 
 
@@ -414,7 +418,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun getGPT3Settings(): Map<String, String?> {
         val model = mPreferences.getString("model", "gpt-3.5-turbo")
-        val max_tokens = mPreferences.getString("max_tokens", "1000")
+        val max_tokens = mPreferences.getString("max_tokens", "200")
         val temperature = mPreferences.getString("temperature", "0")
         val top_p = mPreferences.getString("top_p", "1")
         val n = mPreferences.getString("n", "1")
@@ -422,10 +426,11 @@ class MainActivity : AppCompatActivity() {
         val logprobs = mPreferences.getString("logprobs", "null")
         val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
         val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
+        val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
 
         val gpt3Settings = mapOf("model" to model, "max_tokens" to max_tokens, "temperature" to temperature,
                         "top_p" to top_p, "n" to n, "stream" to stream, "logprobs" to logprobs,
-                        "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty)
+                        "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty, "tokensCheckBox" to tokensInfo)
 
         return gpt3Settings
     }

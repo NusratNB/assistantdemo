@@ -2,15 +2,19 @@ package com.example.buddycareassistant.recordaudio
 
 import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
+import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import java.io.File
 import java.io.FileOutputStream
+
 
 class AudioRecorder(private val ctx: Context) {
 
@@ -21,28 +25,42 @@ class AudioRecorder(private val ctx: Context) {
 
         private var audioRecord: AudioRecord? = null
         private var isRecording = false
+    private var recorder = MediaRecorder()
 
 
 
-//    @RequiresApi(Build.VERSION_CODES.O)
-//    fun startRecording(outputFile: File) {
-//
-//        recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-//        recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-//        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-//        recorder.setOutputFile(outputFile)
-//        recorder.prepare()
-//        recorder.start()
-//    }
-//    fun stopRecording() {
-//        recorder.stop()
-//        recorder.release()
-//    }
+
+
+
+
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun startRecording(outputFile: File) {
+        Log.d("audioPermission", "Status: ${ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)}")
+        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { // get permission
+            recorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT)
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+            recorder.setOutputFile(outputFile)
+            recorder.prepare()
+            recorder.start()
+        }else{
+            Toast.makeText(ctx, "Recording is failed", Toast.LENGTH_SHORT).show()
+        }
+
+    }
+    fun stopRecording() {
+        recorder.stop()
+        recorder.release()
+    }
 
     fun start(outputFile: File) {
         ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
         audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize())
-        audioRecord?.startRecording()
+        if (audioRecord?.state == AudioRecord.STATE_INITIALIZED){
+            audioRecord?.startRecording()
+        }
+
         Log.d("scoTest ", "AudioRecorder file path $outputFile")
 
         isRecording = true

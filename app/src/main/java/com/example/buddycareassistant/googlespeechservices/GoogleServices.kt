@@ -164,9 +164,11 @@ class GoogleServices(private val assetManager: AssetManager ) {
         val logprobs = gpt3Settings["logprobs"]
         val frequency_penalty = gpt3Settings["frequency_penalty"]?.toFloat()
         val presence_penalty = gpt3Settings["presence_penalty"]?.toFloat()
+        val tokensInfo = gpt3Settings["tokensCheckBox"]?.toBoolean()
         if (logprobs != "null"){
             logprobs?.toInt()
         }
+        Log.d("tokensInfo", tokensInfo.toString())
 
 //"\n\nHuman:$inputText\nAI:"
 //        "max_tokens": $max_tokens,
@@ -178,15 +180,34 @@ class GoogleServices(private val assetManager: AssetManager ) {
 //        "frequency_penalty":$frequency_penalty,
 //        "presence_penalty":$presence_penalty,
 ////        "stop":  ["\nHuman:", "\nAI:"]
+        val tempContent = "Tell me about South Korea's political system. if the response more than 100 tokens, make it short."
+        val tempMaxTokens = 200
+        var prompt = ""
 
-        val prompt = """
+        if (tokensInfo == true){
+            prompt = """
         {
           "model": "$model",
           "messages": [
           {"role": "system", "content": "You are a helpful friend."},
-          {"role": "user", "content":"$inputText"}]   
+          {"role": "user", "content":"$inputText. Make your response less than 150 tokens"}],
+           "max_tokens": $max_tokens
         }
     """
+        } else{
+            prompt = """
+        {
+          "model": "$model",
+          "messages": [
+          {"role": "system", "content": "You are a helpful friend."},
+          {"role": "user", "content":"$inputText"}],
+           "max_tokens": $max_tokens
+        }
+    """
+        }
+
+
+
         Log.d("ddd gpt3 prompt", prompt)
         val url = "https://$host/v1/chat/completions"
         Log.d("gpt url:", url)
