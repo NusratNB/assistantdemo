@@ -1,7 +1,11 @@
 package com.example.buddycareassistant.googlespeechservices
 
 import android.content.res.AssetManager
+import android.media.MediaDataSource
+import android.media.MediaPlayer
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
@@ -12,12 +16,14 @@ import com.google.cloud.translate.Translate
 import com.google.cloud.translate.TranslateOptions
 import com.google.cloud.translate.Translation
 import com.google.protobuf.ByteString
+import io.grpc.stub.StreamObserver
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.*
+import java.util.concurrent.TimeUnit
 
 
 class GoogleServices(private val assetManager: AssetManager ) {
@@ -44,6 +50,8 @@ class GoogleServices(private val assetManager: AssetManager ) {
     private val oauthKeyName = "credentials/caremeta-daea7ac2a8c7.json"
     private var inputStream = assetManager.open(oauthKeyName)
     private val oauthKey = readFromInputStream(inputStream)
+    private val mediaPlayer: MediaPlayer = MediaPlayer()
+    private val TIMEOUT_IN_SECONDS = 30
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
 
 
@@ -82,6 +90,7 @@ class GoogleServices(private val assetManager: AssetManager ) {
         return transcription
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun googletts(pathToAudio: String, inputText:String){
 
         val speechClient = TextToSpeechClient.create(
@@ -102,7 +111,6 @@ class GoogleServices(private val assetManager: AssetManager ) {
         FileOutputStream(pathToAudio).use { out ->
             out.write(audioContents.toByteArray())
             out.close()
-
         }
         speechClient.close()
     }
@@ -147,7 +155,7 @@ class GoogleServices(private val assetManager: AssetManager ) {
         val API_KEY = "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"
         val host = "api.openai.com"
 
-        val model = gpt3Settings["model"]
+        val model = gpt3Settings["model"].toString()
         val max_tokens = gpt3Settings["max_tokens"]?.toInt()
         val temperature = gpt3Settings["temperature"]?.toFloat()
         val top_p = gpt3Settings["top_p"]?.toFloat()
@@ -161,25 +169,32 @@ class GoogleServices(private val assetManager: AssetManager ) {
         }
 
 //"\n\nHuman:$inputText\nAI:"
+//        "max_tokens": $max_tokens,
+//        "temperature": $temperature,
+//        "top_p": $top_p,
+//        "logprobs": $logprobs,
+//        "n": $n,
+//        "stream": $stream,
+//        "frequency_penalty":$frequency_penalty,
+//        "presence_penalty":$presence_penalty,
+////        "stop":  ["\nHuman:", "\nAI:"]
 
         val prompt = """
         {
           "model": "$model",
-          "messages": [{"role": "user", "content":"$inputText"}],
-          "max_tokens": $max_tokens,
-          "temperature": $temperature,
-          "top_p": $top_p,
-          "logprobs": $logprobs,
-          "n": $n,
-          "stream": $stream,
-          "frequency_penalty":$frequency_penalty,
-          "presence_penalty":$presence_penalty,
-          "stop":  ["\nHuman:", "\nAI:"]
+          "messages": [
+          {"role": "system", "content": "You are a helpful friend."},
+          {"role": "user", "content":"$inputText"}]   
         }
     """
         Log.d("ddd gpt3 prompt", prompt)
         val url = "https://$host/v1/chat/completions"
-        val client = OkHttpClient()
+        Log.d("gpt url:", url)
+        val client = OkHttpClient.Builder()
+            .connectTimeout(TIMEOUT_IN_SECONDS.toLong(), TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_IN_SECONDS.toLong(), TimeUnit.SECONDS)
+            .writeTimeout(TIMEOUT_IN_SECONDS.toLong(), TimeUnit.SECONDS)
+            .build()
         val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), prompt)
         val request = Request.Builder()
             .url(url)
@@ -220,18 +235,12 @@ class GoogleServices(private val assetManager: AssetManager ) {
         })
 
     }
-
-
-
-
     fun getResponseClovaStudio(inputText: String, callback: (String) -> Unit){
         val host = "clovastudio.apigw.ntruss.com"
         val apiKey = "NTA0MjU2MWZlZTcxNDJiY+iKD5C//ZinLvJkGG2+pGY3yebzfgfa8eYfiCSbuAk88oUuMiZewKsNwbO3LUvjR8m9OL4gnXtKoYhXPqo/NQ+IR2yQDmv/hmjtk5i9l5muyJgBLrigC5GTQtuVspjdKv1FiXYQA8rI4oVPyqrx3OltxeW9kIeGRb54uAeKsHSk2GHT/mIEHmV3VPFegPT+jA=="
         val apiKeyPrimaryVal = "G1OJGTVOHaC2N36FfkKjBSFsztvqmLMNxznm0VcO"
         val requestId = "1d30c0a7a3fb4951b75c14ab55090de6"
         val requestedText = "###A:$inputText###B:"
-
-
 
         val completionRequest = """
             {

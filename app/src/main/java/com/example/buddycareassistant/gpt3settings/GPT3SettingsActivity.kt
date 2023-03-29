@@ -61,7 +61,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         txtPresencePenalty = findViewById(R.id.txtPresencePenalty)
         txtFrequencyPenalty = findViewById(R.id.txtFrequencyPenalty)
 
-        val model = mPreferences.getString("model", "gpt-4")
+        val model = mPreferences.getString("model", "gpt-3.5-turbo")
         val max_tokens = mPreferences.getString("max_tokens", "1000")
         val temperature = mPreferences.getString("temperature", "0")
         val top_p = mPreferences.getString("top_p", "1")
@@ -81,9 +81,10 @@ class GPT3SettingsActivity : AppCompatActivity() {
         logprobs = null
         frequency_penalty=0
         presence_penalty=0.6
+        "gpt-4", "gpt-4-0314", "gpt-4-32k", "gpt-4-32k-0314",
         */
 
-        val gpt3ModelOptions = arrayOf("gpt-4", "gpt-4-0314", "gpt-4-32k", "gpt-4-32k-0314", "gpt-3.5-turbo", "gpt-3.5-turbo-0301")
+        val gpt3ModelOptions = arrayOf("gpt-3.5-turbo", "gpt-3.5-turbo-0301")
         val streamOptions = arrayOf(false, true)
         val logprobsOptions = arrayOf("null", "1", "2", "3", "4", "5")
         val adapterGPT3Models = ArrayAdapter(this, android.R.layout.simple_spinner_item, gpt3ModelOptions)
@@ -260,7 +261,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         }
         btnResetDefault.setOnClickListener {
             val gpt3SettingsPreferences = mPreferences.edit()
-            gpt3SettingsPreferences.putString("model", "gpt-4")
+            gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
             gpt3SettingsPreferences.putString("max_tokens", "1000")
             gpt3SettingsPreferences.putString("temperature", "0")
             gpt3SettingsPreferences.putString("top_p", "1")
@@ -271,7 +272,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             gpt3SettingsPreferences.putString("presence_penalty", "0.6")
             gpt3SettingsPreferences.apply()
 
-            val model = mPreferences.getString("model", "gpt-4")
+            val model = mPreferences.getString("model", "gpt-3.5-turbo")
             val max_tokens = mPreferences.getString("max_tokens", "1000")
             val temperature = mPreferences.getString("temperature", "0")
             val top_p = mPreferences.getString("top_p", "1")

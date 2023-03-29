@@ -227,7 +227,8 @@ class MainActivity : AppCompatActivity() {
 
                 val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
                 outputFile = File(pathToRecords, audioName)
-                voiceRecorder.start(outputFile)
+                recorder.start(outputFile)
+//                voiceRecorder.start(outputFile)
                 btnRecord.text = "Recording"
 
 
@@ -286,8 +287,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun assistantDemoHelper(){
-        voiceRecorder.stop()
+        recorder.stop()
+//        voiceRecorder.stop()
         btnRecord.text = "Start"
         isRecorderAvailable = true
         fileName = outputFile// audioRecorder.audioName
@@ -394,7 +397,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initGPT3Settings(){
         val gpt3SettingsPreferences = mPreferences.edit()
-        gpt3SettingsPreferences.putString("model", "gpt-4")
+        gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
         gpt3SettingsPreferences.putString("max_tokens", "1000")
         gpt3SettingsPreferences.putString("temperature", "0")
         gpt3SettingsPreferences.putString("top_p", "1")
@@ -410,7 +413,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getGPT3Settings(): Map<String, String?> {
-        val model = mPreferences.getString("model", "gpt-4")
+        val model = mPreferences.getString("model", "gpt-3.5-turbo")
         val max_tokens = mPreferences.getString("max_tokens", "1000")
         val temperature = mPreferences.getString("temperature", "0")
         val top_p = mPreferences.getString("top_p", "1")

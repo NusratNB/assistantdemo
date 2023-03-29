@@ -53,7 +53,7 @@ class AudioRecorder(private val ctx: Context) {
 
     fun stop() {
         audioRecord?.stop()
-        audioRecord?.release()
+//        audioRecord?.release()
         audioRecord = null
         isRecording = false
     }

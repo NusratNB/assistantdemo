@@ -1,165 +1,174 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
+
     tools:context=".MainActivity">
-
-    <View
-        android:id="@+id/line_view"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_margin="10dp"
-        android:background="#000000"/>
-
-    <TextView
-        android:id="@+id/txtStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="start"
-        android:text="Choose Language Model Type"/>
-
-
-
-    <RadioGroup
-        android:id="@+id/radGroupLMType"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:orientation="horizontal"
-        android:gravity="center">
-
-        <RadioButton
-            android:id="@+id/radBtnNaverClova"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="20sp"
-            android:checked="true"
-            android:text="Naver Clova"
-            />
-
-        <RadioButton
-            android:id="@+id/radBtnGPT3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="20sp"
-            android:text="GPT-3"/>
-
-
-    </RadioGroup>
-
-    <View
-        android:id="@+id/line_view2"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_margin="10dp"
-        android:background="#000000"/>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center">
 
+        <View
+            android:id="@+id/line_view"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="10dp"
+            android:background="#000000"/>
+
+        <TextView
+            android:id="@+id/txtStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="start"
+            android:text="Choose Language Model Type"/>
+
+
+
+        <RadioGroup
+            android:id="@+id/radGroupLMType"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <RadioButton
+                android:id="@+id/radBtnNaverClova"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="20sp"
+                android:checked="true"
+                android:text="Naver Clova"
+                />
+
+            <RadioButton
+                android:id="@+id/radBtnGPT3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="20sp"
+                android:text="GPT-3"/>
+
+
+        </RadioGroup>
+
+        <View
+            android:id="@+id/line_view2"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_margin="10dp"
+            android:background="#000000"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_margin="10dp">
+            android:gravity="center">
 
-            <TextView
-                android:id="@+id/txtSent"
-                android:layout_width="wrap_content"
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Sent:"
-                app:layout_constraintBottom_toBottomOf="parent"
+                android:orientation="vertical"
+                android:layout_margin="10dp">
+
+                <TextView
+                    android:id="@+id/txtSent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sent:"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_margin="20sp"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/txtReceived"
+                    android:layout_width="wrap_content"
+                    android:text="Received:"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_margin="20sp"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:id="@+id/ll_buttons"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:gravity="center_horizontal"
+                android:orientation="horizontal"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                android:layout_margin="20sp"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toBottomOf="parent">
 
-            <TextView
-                android:id="@+id/txtReceived"
-                android:layout_width="wrap_content"
-                android:text="Received:"
+                <Button
+                    android:id="@+id/btnRecord"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:layout_margin="5dp"
+                    android:text="Record" />
+
+                <Button
+                    android:id="@+id/btnPredict"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:text="predict" />
+
+                <Button
+                    android:id="@+id/btnPlay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:text="Play"/>
+
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnSettings"
+                android:layout_width="300dp"
                 android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                android:layout_margin="20sp"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:layout_margin="5dp"
+                android:text="Gpt3 Settings" />
+
+            <Button
+                android:id="@+id/btnInfo"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="GPT3 Parameters Info"/>
+
+            <Button
+                android:id="@+id/btnClovaSettings"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Naver Clova Settings"/>
+
+            <Button
+                android:id="@+id/btnBluetoothControl"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="Bluetooth Control Test"/>
 
         </LinearLayout>
-
-
-        <LinearLayout
-            android:id="@+id/ll_buttons"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:gravity="center_horizontal"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="parent">
-
-            <Button
-                android:id="@+id/btnRecord"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_margin="5dp"
-                android:text="Record" />
-
-            <Button
-                android:id="@+id/btnPredict"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="predict" />
-
-            <Button
-                android:id="@+id/btnPlay"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="Play"/>
-
-
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/btnSettings"
-            android:layout_width="300dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:text="Gpt3 Settings" />
-
-        <Button
-            android:id="@+id/btnInfo"
-            android:layout_width="300dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:text="GPT3 Parameters Info"/>
-
-        <Button
-            android:id="@+id/btnClovaSettings"
-            android:layout_width="300dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:text="Naver Clova Settings"/>
-
-        <Button
-            android:id="@+id/btnBluetoothControl"
-            android:layout_width="300dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp"
-            android:text="Bluetooth Control Test"/>
 
     </LinearLayout>
 
-</LinearLayout>
+
+
+</ScrollView>
