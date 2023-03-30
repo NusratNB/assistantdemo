@@ -2,10 +2,6 @@ package com.example.buddycareassistant
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothA2dp
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothProfile
-import android.bluetooth.BluetoothProfile.A2DP
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -30,8 +26,8 @@ import com.example.buddycareassistant.bluetoothcontrol.BluetoothControllerImpl
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
 import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
-import com.example.buddycareassistant.recordaudio.AudioRecorder
 import com.example.buddycareassistant.recordaudio.VoiceRecorder
+import com.example.buddycareassistant.service.AssistantService
 import com.konovalov.vad.VadConfig
 import java.io.File
 
@@ -59,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     private var isMediaPlayerInitialized = true
     private var isMediaPlayerSilenceInitialized = true
     private lateinit var radioGroupLM: RadioGroup
-    private lateinit var recorder: AudioRecorder
+//    private lateinit var recorder: AudioRecorder
     private lateinit var outputFile: File
     private lateinit var googlestt: GoogleServices
     private lateinit var handler: Handler
@@ -80,13 +76,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.S)
+//    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         googlestt = GoogleServices(assets)
         radioGroupLM = findViewById(R.id.radGroupLMType)
-        recorder = AudioRecorder(this)
+//        recorder = AudioRecorder(this)
 
         radioGroupLM.setOnCheckedChangeListener { radioGroup, id ->
 
@@ -179,7 +175,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
         }
         btnRecord.setOnClickListener {
-            recorder.stop()
+//            recorder.stop()
+            stopRecording()
+
 //            recorder.stopRecording()
             btnRecord.text = "Start"
             isRecorderAvailable = true
@@ -194,6 +192,29 @@ class MainActivity : AppCompatActivity() {
         onNewIntent(intent)
     }
 
+    private fun stopRecording() {
+        val intent = Intent(this@MainActivity, AssistantService::class.java)
+            .apply { action = AssistantService.STOP_ACTION }
+        //            startService(intent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+
+    private fun startRecording() {
+        val intent = Intent(this@MainActivity, AssistantService::class.java )
+            .apply { action = AssistantService.START_ACTION }
+//                startService(intent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+
+//    @RequiresApi(Build.VERSION_CODES.S)
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString("txtSentText", txtSent.text.toString())
@@ -230,11 +251,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.P)
+//    @RequiresApi(Build.VERSION_CODES.P)
     private fun checkIntent() {
         if (intent.action != "android.intent.action.VOICE_COMMAND" && !isRecorderAvailable) {
 //            enableVoiceRecord()
-            recorder.stop()
+//            recorder.stop()
+
+            stopRecording()
+
             isRecorderAvailable = true
         }
     }
@@ -257,7 +281,10 @@ class MainActivity : AppCompatActivity() {
 
                 val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
                 outputFile = File(pathToRecords, audioName)
-                recorder.start(outputFile)
+//                recorder.start(outputFile)
+
+                startRecording()
+
 //                recorder.startRecording(outputFile)
 //                voiceRecorder.start(outputFile)
                 btnRecord.text = "Recording"
@@ -274,8 +301,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    @SuppressLint("WrongConstant")
     private fun enableVoiceRecord() {
 
         val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
@@ -305,7 +330,7 @@ class MainActivity : AppCompatActivity() {
         audioManager!!.isSpeakerphoneOn = true
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
+//    @RequiresApi(Build.VERSION_CODES.S)
     private fun assistantDemo() {
 
         if (isRecorderAvailable) {
@@ -318,9 +343,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
+//    @RequiresApi(Build.VERSION_CODES.M)
     private fun assistantDemoHelper(){
-        recorder.stop()
+//        recorder.stop()
+        stopRecording()
+
 //        recorder.stopRecording()
 //        voiceRecorder.stop()
         btnRecord.text = "Start"
@@ -424,6 +451,10 @@ class MainActivity : AppCompatActivity() {
                 mediaPlayer.start()
 
             }
+//            if (prevSentAudio?.path?.isNotEmpty() == true){
+//                prevSentAudio?.delete()
+//            }
+
         } else{
             Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
         }
@@ -465,4 +496,6 @@ class MainActivity : AppCompatActivity() {
 
         return gpt3Settings
     }
+
+
 }

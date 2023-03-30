@@ -18,7 +18,7 @@ import java.io.FileOutputStream
 
 class AudioRecorder(private val ctx: Context) {
 
-    private val audioSource = MediaRecorder.AudioSource.MIC
+    private val audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION
         private val sampleRate = 16000
         private val channelConfig = AudioFormat.CHANNEL_IN_MONO
         private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
