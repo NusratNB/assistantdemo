@@ -133,35 +133,7 @@ class MainActivity : AppCompatActivity() {
         btnRecord.text = "Start"
 
 
-        btnPlay = findViewById(R.id.btnPlay)
-        btnPlay.text = "Play"
-        btnPlay.setOnClickListener{
-            if (playingAvailable){
-                if (audioFilePath.isNotEmpty()){
-                    val assetManager = this.assets
-                    val firstFileDescriptor = assetManager.openFd("silence.mp3")
-                    mediaPlayer = MediaPlayer()
-                    mediaPlayer!!.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
-                    mediaPlayer!!.prepare()
-                    mediaPlayer!!.setOnCompletionListener {
-                        val mediaPlayerSilence = MediaPlayer()
-                        mediaPlayerSilence.setDataSource(audioFilePath)
-                        mediaPlayerSilence.prepare()
-                        mediaPlayerSilence.start()
-                    }
-                    mediaPlayer!!.start()
 
-                }
-//                if (prevSentAudio?.path?.isNotEmpty() == true){
-//                    prevSentAudio?.delete()
-//                }
-
-            } else{
-                Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
-            }
-
-        }
-//        Log.d("voiceRecorder", "differenceNoiseAndSpeech: ${voiceRecorder.differenceNoiseAndSpeech} getDiffTimeCondition: ${voiceRecorder.getDiffTimeCondition()}")
         txtReceived = findViewById(R.id.txtReceived)
         txtSent = findViewById(R.id.txtSent)
         btnStopAudio = findViewById(R.id.btnStopAudio)
@@ -186,7 +158,45 @@ class MainActivity : AppCompatActivity() {
             if (mediaPlayer.isPlaying){
                 mediaPlayer.stop()
                 mediaPlayer.reset()
+                isMediaPlayerInitialized = false
             }
+            if (mediaPlayerSilence.isPlaying){
+                mediaPlayerSilence.stop()
+                mediaPlayerSilence.reset()
+                isMediaPlayerSilenceInitialized = false
+            }
+        }
+
+        btnPlay = findViewById(R.id.btnPlay)
+        btnPlay.text = "Play"
+        btnPlay.setOnClickListener{
+            if (playingAvailable){
+                if (audioFilePath.isNotEmpty()){
+                    val assetManager = this.assets
+                    val firstFileDescriptor = assetManager.openFd("silence.mp3")
+                    if (!isMediaPlayerInitialized){
+                        mediaPlayer = MediaPlayer()
+                    }
+                    mediaPlayer.reset()
+                    mediaPlayer.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
+                    mediaPlayer.prepare()
+                    mediaPlayer.setOnCompletionListener {
+                        val mediaPlayerSilence = MediaPlayer()
+                        mediaPlayerSilence.setDataSource(audioFilePath)
+                        mediaPlayerSilence.prepare()
+                        mediaPlayerSilence.start()
+                    }
+                    mediaPlayer.start()
+
+                }
+    //                if (prevSentAudio?.path?.isNotEmpty() == true){
+    //                    prevSentAudio?.delete()
+    //                }
+
+            } else{
+                Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
+            }
+
         }
 
 
@@ -350,6 +360,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 //    @RequiresApi(Build.VERSION_CODES.M)
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun assistantDemoHelper(){
 //        recorder.stop()
         stopRecording()
