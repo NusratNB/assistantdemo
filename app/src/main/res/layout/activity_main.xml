@@ -121,11 +121,11 @@
                     android:text="Record" />
 
                 <Button
-                    android:id="@+id/btnPredict"
+                    android:id="@+id/btnStopAudio"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
-                    android:text="predict" />
+                    android:text="Stop Audio" />
 
                 <Button
                     android:id="@+id/btnPlay"
@@ -139,31 +139,33 @@
 
             <Button
                 android:id="@+id/btnSettings"
-                android:layout_width="300dp"
+                android:layout_width="330dp"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="Gpt3 Settings" />
 
             <Button
                 android:id="@+id/btnInfo"
-                android:layout_width="300dp"
+                android:layout_width="330dp"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="GPT3 Parameters Info"/>
-
-            <Button
-                android:id="@+id/btnClovaSettings"
-                android:layout_width="300dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="5dp"
-                android:text="Naver Clova Settings"/>
-
             <Button
                 android:id="@+id/btnBluetoothControl"
-                android:layout_width="300dp"
+                android:layout_width="330dp"
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="Bluetooth Control Test"/>
+
+            <Button
+                android:id="@+id/btnClovaSettings"
+                android:layout_width="330dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:visibility="invisible"
+                android:text="Naver Clova Settings"/>
+
+
 
         </LinearLayout>
 

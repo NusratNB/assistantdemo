@@ -39,7 +39,7 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
     private lateinit var btnRecord: Button
     private lateinit var btnPlay: Button
-    private lateinit var btnInference: Button
+    private lateinit var btnStopAudio: Button
     private lateinit var btnInfo: Button
     private lateinit var btnSettings: Button
     private lateinit var btnBluetoothControl: Button
@@ -168,7 +168,7 @@ class MainActivity : AppCompatActivity() {
 //        Log.d("voiceRecorder", "differenceNoiseAndSpeech: ${voiceRecorder.differenceNoiseAndSpeech} getDiffTimeCondition: ${voiceRecorder.getDiffTimeCondition()}")
         txtReceived = findViewById(R.id.txtReceived)
         txtSent = findViewById(R.id.txtSent)
-        btnInference = findViewById(R.id.btnPredict)
+        btnStopAudio = findViewById(R.id.btnStopAudio)
         btnInfo = findViewById(R.id.btnInfo)
 
         btnInfo.setOnClickListener {
@@ -183,6 +183,12 @@ class MainActivity : AppCompatActivity() {
 //            recorder.stopRecording()
             btnRecord.text = "Start"
             isRecorderAvailable = true
+        }
+        btnStopAudio.setOnClickListener {
+            if (mediaPlayer.isPlaying){
+                mediaPlayer.stop()
+                mediaPlayer.reset()
+            }
         }
 
 
