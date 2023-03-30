@@ -180,12 +180,6 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             })
         }
     }
-
-    fun getDiffTimeCondition(): Boolean {
-        return (noiseTime - speechTime) != noiseTime
-    }
-
-
     private fun writeAudioDataToFile(outputFile: File) {
         val data = ByteArray(minBufferSizeForAudioSaving)
         val outputStream = FileOutputStream(outputFile)

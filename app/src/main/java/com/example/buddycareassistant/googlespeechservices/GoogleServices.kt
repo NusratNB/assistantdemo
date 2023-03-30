@@ -191,7 +191,13 @@ class GoogleServices(private val assetManager: AssetManager ) {
           "messages": [
           {"role": "system", "content": "You are a helpful friend."},
           {"role": "user", "content":"$inputText. Make your response less than 150 tokens"}],
-           "max_tokens": $max_tokens
+           "max_tokens": $max_tokens,
+           "temperature": $temperature,
+           "top_p": $top_p,
+           "n": $n,
+           "stream": $stream,
+           "frequency_penalty":$frequency_penalty,
+           "presence_penalty":$presence_penalty
         }
     """
         } else{
@@ -201,7 +207,13 @@ class GoogleServices(private val assetManager: AssetManager ) {
           "messages": [
           {"role": "system", "content": "You are a helpful friend."},
           {"role": "user", "content":"$inputText"}],
-           "max_tokens": $max_tokens
+           "max_tokens": $max_tokens,
+           "temperature": $temperature,
+           "top_p": $top_p,
+           "n": $n,
+           "stream": $stream,
+           "frequency_penalty":$frequency_penalty,
+           "presence_penalty":$presence_penalty
         }
     """
         }

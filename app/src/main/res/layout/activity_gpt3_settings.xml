@@ -142,7 +142,7 @@
             android:id = "@+id/txtLogProbs"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:visibility="invisible"
             android:text="logprobs:"
             android:textStyle="bold" />
 
@@ -150,14 +150,12 @@
             android:id="@+id/spLogProbs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginVertical="10dp" />
+            android:visibility="invisible" />
 
         <TextView
             android:id = "@+id/txtPresencePenalty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:text="presence_penalty:"
             android:textStyle="bold" />
 

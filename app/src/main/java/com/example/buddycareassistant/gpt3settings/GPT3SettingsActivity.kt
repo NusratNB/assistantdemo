@@ -65,7 +65,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
 
         val model = mPreferences.getString("model", "gpt-3.5-turbo")
         val max_tokens = mPreferences.getString("max_tokens", "200")
-        val temperature = mPreferences.getString("temperature", "0")
+        val temperature = mPreferences.getString("temperature", "1")
         val top_p = mPreferences.getString("top_p", "1")
         val n = mPreferences.getString("n", "1")
         val stream = mPreferences.getString("stream", "false")
@@ -78,7 +78,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         /* Default-settings
         model = 'gpt-4
         max_tokens = 1000
-        temperature = 0
+        temperature = 1
         top_p = 1
         n = 1
         stream = false
@@ -107,7 +107,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         spLogProbs.adapter = adapterLogprobs
         spLogProbs.setSelection(settedLogProbsIndex)
 
-        skTemperature.max = 100
+        skTemperature.max = 200
         if (temperature != null) {
             skTemperature.progress = (temperature.toFloat()*100).toInt()
         }else{
@@ -269,7 +269,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             val gpt3SettingsPreferences = mPreferences.edit()
             gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
             gpt3SettingsPreferences.putString("max_tokens", "200")
-            gpt3SettingsPreferences.putString("temperature", "0")
+            gpt3SettingsPreferences.putString("temperature", "1")
             gpt3SettingsPreferences.putString("top_p", "1")
             gpt3SettingsPreferences.putString("n", "1")
             gpt3SettingsPreferences.putString("stream", "false")
@@ -281,7 +281,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
 
             val model = mPreferences.getString("model", "gpt-3.5-turbo")
             val max_tokens = mPreferences.getString("max_tokens", "200")
-            val temperature = mPreferences.getString("temperature", "0")
+            val temperature = mPreferences.getString("temperature", "1")
             val top_p = mPreferences.getString("top_p", "1")
             val n = mPreferences.getString("n", "1")
             val stream = mPreferences.getString("stream", "false")

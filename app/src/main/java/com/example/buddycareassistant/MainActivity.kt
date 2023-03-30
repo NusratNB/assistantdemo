@@ -351,7 +351,7 @@ class MainActivity : AppCompatActivity() {
                             Log.d("ddd gpt3", responseFromGPT3)
                             Log.d("ddd engToKor", engToKor)
 
-                            val time = android.text.format.Time()
+                            val time = Time()
                             time.setToNow()
                             audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
 //                            prevSentAudio = fileName
@@ -408,10 +408,6 @@ class MainActivity : AppCompatActivity() {
                 mediaPlayer.start()
 
             }
-//            if (prevSentAudio?.path?.isNotEmpty() == true){
-//                prevSentAudio?.delete()
-//            }
-
         } else{
             Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
         }
@@ -421,7 +417,7 @@ class MainActivity : AppCompatActivity() {
         val gpt3SettingsPreferences = mPreferences.edit()
         gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
         gpt3SettingsPreferences.putString("max_tokens", "200")
-        gpt3SettingsPreferences.putString("temperature", "0")
+        gpt3SettingsPreferences.putString("temperature", "1")
         gpt3SettingsPreferences.putString("top_p", "1")
         gpt3SettingsPreferences.putString("n", "1")
         gpt3SettingsPreferences.putString("stream", "false")
@@ -438,7 +434,7 @@ class MainActivity : AppCompatActivity() {
     private fun getGPT3Settings(): Map<String, String?> {
         val model = mPreferences.getString("model", "gpt-3.5-turbo")
         val max_tokens = mPreferences.getString("max_tokens", "200")
-        val temperature = mPreferences.getString("temperature", "0")
+        val temperature = mPreferences.getString("temperature", "1")
         val top_p = mPreferences.getString("top_p", "1")
         val n = mPreferences.getString("n", "1")
         val stream = mPreferences.getString("stream", "false")
@@ -453,6 +449,4 @@ class MainActivity : AppCompatActivity() {
 
         return gpt3Settings
     }
-
-
 }

@@ -32,7 +32,7 @@ class ParametersInfoActivity : AppCompatActivity() {
         tvTopP = findViewById(R.id.tvTopP)
         tvN = findViewById(R.id.tvN)
         tvStream = findViewById(R.id.tvStream)
-        tvLogProbs = findViewById(R.id.tvLogProbs)
+//        tvLogProbs = findViewById(R.id.tvLogProbs)
         tvStop = findViewById(R.id.tvStop)
         tvPresencePenalty = findViewById(R.id.tvPresencePenalty)
         tvFrequencyPenalty = findViewById(R.id.tvFrequencyPenalty)
@@ -63,11 +63,11 @@ class ParametersInfoActivity : AppCompatActivity() {
                         " server-sent events as they become available, with the stream terminated by a data: [DONE] message." +
                         "(Optional. Boolean. Default to false)"
 
-        tvLogProbs.text = tvLogProbs.text.toString() + " Include the log probabilities on the logprobs most likely tokens, as well the chosen tokens. " +
-                        "For example, if logprobs is 5, the API will return a list of the 5 most likely tokens. " +
-                        "The API will always return the logprob of the sampled token, so there may be up to logprobs+1 elements in the response.\n" +
-                "The maximum value for logprobs is 5. If you need more than this, please contact us through our Help center and describe your use case." +
-                "(Integer. Optional. Defaults to null)"
+//        tvLogProbs.text = tvLogProbs.text.toString() + " Include the log probabilities on the logprobs most likely tokens, as well the chosen tokens. " +
+//                        "For example, if logprobs is 5, the API will return a list of the 5 most likely tokens. " +
+//                        "The API will always return the logprob of the sampled token, so there may be up to logprobs+1 elements in the response.\n" +
+//                "The maximum value for logprobs is 5. If you need more than this, please contact us through our Help center and describe your use case." +
+//                "(Integer. Optional. Defaults to null)"
 
         tvStop.text = tvStop.text.toString() + " Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence." +
                 "(String. Optional)"
