@@ -54,7 +54,10 @@ class MainActivity : AppCompatActivity() {
     private var prevRecAudio = ""
     private var audioFilePath = ""
     private var isRecorderInitilized = false
-    private var mediaPlayer: MediaPlayer? = null
+    private var mediaPlayer: MediaPlayer = MediaPlayer()
+    private var mediaPlayerSilence: MediaPlayer =MediaPlayer()
+    private var isMediaPlayerInitialized = true
+    private var isMediaPlayerSilenceInitialized = true
     private lateinit var radioGroupLM: RadioGroup
     private lateinit var recorder: AudioRecorder
     private lateinit var outputFile: File
@@ -196,6 +199,16 @@ class MainActivity : AppCompatActivity() {
         Log.d("scoTest", intent?.action.toString())
 
         if(intent?.action == "android.intent.action.VOICE_COMMAND") {
+            if (mediaPlayer.isPlaying){
+                mediaPlayer.stop()
+                mediaPlayer.reset()
+                isMediaPlayerInitialized = false
+            }
+            if (mediaPlayerSilence.isPlaying){
+                mediaPlayerSilence.stop()
+                mediaPlayerSilence.reset()
+                isMediaPlayerSilenceInitialized = false
+            }
 
             assistantDemo()
         }
@@ -377,16 +390,22 @@ class MainActivity : AppCompatActivity() {
                 Log.d("rrrr audioFilePath", audioFilePath)
                 val assetManager = this.assets
                 val firstFileDescriptor = assetManager.openFd("silence.mp3")
-                mediaPlayer = MediaPlayer()
-                mediaPlayer!!.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
-                mediaPlayer!!.prepare()
-                mediaPlayer!!.setOnCompletionListener {
-                    val mediaPlayerSilence = MediaPlayer()
+                if (!isMediaPlayerInitialized){
+                    mediaPlayer = MediaPlayer()
+                }
+                if (!isMediaPlayerSilenceInitialized){
+                    mediaPlayerSilence = MediaPlayer()
+                }
+                mediaPlayer.reset()
+                mediaPlayer.setDataSource(firstFileDescriptor.fileDescriptor, firstFileDescriptor.startOffset, firstFileDescriptor.length)
+                mediaPlayer.prepare()
+                mediaPlayer.setOnCompletionListener {
+                    mediaPlayerSilence.reset()
                     mediaPlayerSilence.setDataSource(audioFilePath)
                     mediaPlayerSilence.prepare()
                     mediaPlayerSilence.start()
                 }
-                mediaPlayer!!.start()
+                mediaPlayer.start()
 
             }
 //            if (prevSentAudio?.path?.isNotEmpty() == true){
