@@ -170,6 +170,7 @@ class MainActivity : AppCompatActivity() {
         txtSent = findViewById(R.id.txtSent)
         btnInference = findViewById(R.id.btnPredict)
         btnInfo = findViewById(R.id.btnInfo)
+
         btnInfo.setOnClickListener {
             startActivity(Intent(this@MainActivity, ParametersInfoActivity::class.java))
         }
@@ -184,6 +185,7 @@ class MainActivity : AppCompatActivity() {
             isRecorderAvailable = true
         }
 
+
         if(mPreferences.getString("language_model", "gpt-3").equals("gpt-3")){
             radioGroupLM.check(R.id.radBtnGPT3)
         } else {
@@ -191,6 +193,20 @@ class MainActivity : AppCompatActivity() {
         }
         onNewIntent(intent)
     }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("txtSentText", txtSent.text.toString())
+        outState.putString("txtReceivedText", txtReceived.text.toString())
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        txtSent.text = savedInstanceState.getString("txtSentText")
+        txtReceived.text = savedInstanceState.getString("txtReceivedText")
+    }
+
+
 
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onNewIntent(intent: Intent?) {
