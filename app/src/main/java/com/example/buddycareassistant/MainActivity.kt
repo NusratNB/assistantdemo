@@ -317,8 +317,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun enableVoiceRecord() {
-
         val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
         this.registerReceiver( mBluetoothScoReceiver, intentFilter)
         audioManager = this.getSystemService(AudioManager::class.java)
@@ -403,14 +403,13 @@ class MainActivity : AppCompatActivity() {
                             playAudio()
                         }
                     }else{
-                        val korToEng = googlestt.googleTranslatorKoreanToEnglish(ttt)
+                        var korToEng = googlestt.googleTranslatorKoreanToEnglish(ttt)
+
                         Log.d("ddd korToEng", korToEng)
                         val gpt3Settings = getGPT3Settings()
-                        googlestt.getResponseGPT3(gpt3Settings, korToEng){ responseFromGPT3->
-                            val engToKor = googlestt.googleTranslatorEnglishToKorean(responseFromGPT3)
-                            Log.d("ddd gpt3", responseFromGPT3)
-                            Log.d("ddd engToKor", engToKor)
-
+                        if (korToEng == ""){
+                            korToEng = "I don't understand, can you repeat."
+                            val engToKor = googlestt.googleTranslatorEnglishToKorean(korToEng)
                             val time = Time()
                             time.setToNow()
                             audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
@@ -429,7 +428,33 @@ class MainActivity : AppCompatActivity() {
                                 txtReceived.text = "Received: " + engToKor
                             }
                             playAudio()
+                        }else{
+                            googlestt.getResponseGPT3(gpt3Settings, korToEng){ responseFromGPT3->
+                                val engToKor = googlestt.googleTranslatorEnglishToKorean(responseFromGPT3)
+                                Log.d("ddd gpt3", responseFromGPT3)
+                                Log.d("ddd engToKor", engToKor)
+
+                                val time = Time()
+                                time.setToNow()
+                                audioFilePath = pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S").toString()+".mp3"
+//                            prevSentAudio = fileName
+                                Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+                                Log.d("audioFilePath", audioFilePath)
+
+                                googlestt.googletts(audioFilePath, engToKor)
+                                Log.d("ddd googletts", audioFilePath)
+
+//                            if (prevRecAudio.isNotEmpty()){
+//                                val ff = File(prevRecAudio)
+//                                ff.delete()
+//                            }
+                                runOnUiThread {
+                                    txtReceived.text = "Received: " + engToKor
+                                }
+                                playAudio()
+                            }
                         }
+
                     }
                 }.start()
 
@@ -449,7 +474,7 @@ class MainActivity : AppCompatActivity() {
             if (audioFilePath.isNotEmpty()){
                 Log.d("rrrr audioFilePath", audioFilePath)
                 val assetManager = this.assets
-                val firstFileDescriptor = assetManager.openFd("silence.mp3")
+                val firstFileDescriptor = assetManager.openFd("silenceShort.mp3")
                 if (!isMediaPlayerInitialized){
                     mediaPlayer = MediaPlayer()
                 }

@@ -93,8 +93,14 @@ class GoogleServices(private val assetManager: AssetManager ) {
     @RequiresApi(Build.VERSION_CODES.M)
     fun googletts(pathToAudio: String, inputText:String){
 
+        val transportChannelProvider = TextToSpeechSettings.defaultGrpcTransportProviderBuilder()
+            .setMaxInboundMessageSize(1024 * 1024 * 100) // Set max message size to 100 MB
+            .build()
+
         val speechClient = TextToSpeechClient.create(
-            TextToSpeechSettings.newBuilder().setCredentialsProvider {  GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray()))  }.build()
+            TextToSpeechSettings.newBuilder().setCredentialsProvider {  GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray()))  }
+                .setTransportChannelProvider(transportChannelProvider)
+                .build()
         )
         val input = SynthesisInput.newBuilder().setText(inputText).build()
         val voice = VoiceSelectionParams.newBuilder()
@@ -134,6 +140,14 @@ class GoogleServices(private val assetManager: AssetManager ) {
         return resultText
     }
 
+    private fun removeSubstring(tempString: String, translatedText: String): String {
+        return if (translatedText.contains(tempString)) {
+            translatedText.replace(tempString, "")
+        } else {
+            translatedText
+        }
+    }
+
     fun googleTranslatorEnglishToKorean(inputText: String): String{
 
         inputStream = assetManager.open(oauthKeyName)
@@ -147,7 +161,11 @@ class GoogleServices(private val assetManager: AssetManager ) {
             Translate.TranslateOption.sourceLanguage("en"),
             Translate.TranslateOption.targetLanguage("ko")
         )
-        val resultText =  translation.translatedText
+
+        val translatedText = translation.translatedText
+        val tempString = "&quot;"
+        val resultText = removeSubstring(tempString, translatedText)
+
         return resultText
     }
 
@@ -190,7 +208,7 @@ class GoogleServices(private val assetManager: AssetManager ) {
           "model": "$model",
           "messages": [
           {"role": "system", "content": "You are a helpful friend."},
-          {"role": "user", "content":"$inputText. Make your response less than 150 tokens"}],
+          {"role": "user", "content":"$inputText. Make your response less than $max_tokens tokens"}],
            "max_tokens": $max_tokens,
            "temperature": $temperature,
            "top_p": $top_p,
