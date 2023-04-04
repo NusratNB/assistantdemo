@@ -59,9 +59,6 @@ class GoogleServices(private val assetManager: AssetManager ) {
 
         val audioInputStream = FileInputStream(audioURI)
         val audioBytes = audioInputStream.readBytes()
-
-
-
         val speechClient = SpeechClient.create(
             SpeechSettings.newBuilder()
                 .setCredentialsProvider { GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray())) }
