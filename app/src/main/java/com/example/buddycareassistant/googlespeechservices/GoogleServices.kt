@@ -1,11 +1,14 @@
 package com.example.buddycareassistant.googlespeechservices
 
+import android.content.Context
 import android.content.res.AssetManager
 import android.media.MediaDataSource
 import android.media.MediaPlayer
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.example.buddycareassistant.storemessages.MessageStorage
+import com.google.api.client.json.Json
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
@@ -26,7 +29,7 @@ import java.io.*
 import java.util.concurrent.TimeUnit
 
 
-class GoogleServices(private val assetManager: AssetManager ) {
+class GoogleServices(val context: Context, private val assetManager: AssetManager ) {
 
 
 
@@ -52,6 +55,7 @@ class GoogleServices(private val assetManager: AssetManager ) {
     private val oauthKey = readFromInputStream(inputStream)
     private val mediaPlayer: MediaPlayer = MediaPlayer()
     private val TIMEOUT_IN_SECONDS = 30
+    private val messageStorage: MessageStorage = MessageStorage(context)
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
 
 
@@ -87,7 +91,6 @@ class GoogleServices(private val assetManager: AssetManager ) {
         return transcription
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     fun googletts(pathToAudio: String, inputText:String){
 
         val transportChannelProvider = TextToSpeechSettings.defaultGrpcTransportProviderBuilder()
@@ -185,54 +188,37 @@ class GoogleServices(private val assetManager: AssetManager ) {
         }
         Log.d("tokensInfo", tokensInfo.toString())
 
-//"\n\nHuman:$inputText\nAI:"
-//        "max_tokens": $max_tokens,
-//        "temperature": $temperature,
-//        "top_p": $top_p,
-//        "logprobs": $logprobs,
-//        "n": $n,
-//        "stream": $stream,
-//        "frequency_penalty":$frequency_penalty,
-//        "presence_penalty":$presence_penalty,
-////        "stop":  ["\nHuman:", "\nAI:"]
-        val tempContent = "Tell me about South Korea's political system. if the response more than 100 tokens, make it short."
-        val tempMaxTokens = 200
-        var prompt = ""
 
-        if (tokensInfo == true){
-            prompt = """
-        {
-          "model": "$model",
-          "messages": [
-          {"role": "system", "content": "You are a helpful friend."},
-          {"role": "user", "content":"$inputText. Make your response less than $max_tokens tokens"}],
-           "max_tokens": $max_tokens,
-           "temperature": $temperature,
-           "top_p": $top_p,
-           "n": $n,
-           "stream": $stream,
-           "frequency_penalty":$frequency_penalty,
-           "presence_penalty":$presence_penalty
-        }
-    """
+        val newRequestMessageJson = JSONObject()
+
+        if (tokensInfo==true){
+            newRequestMessageJson.put("role", "user")
+            newRequestMessageJson.put("content", "$inputText. Make your response less than $max_tokens tokens")
+
         } else{
-            prompt = """
-        {
-          "model": "$model",
-          "messages": [
-          {"role": "system", "content": "You are a helpful friend."},
-          {"role": "user", "content":"$inputText"}],
-           "max_tokens": $max_tokens,
-           "temperature": $temperature,
-           "top_p": $top_p,
-           "n": $n,
-           "stream": $stream,
-           "frequency_penalty":$frequency_penalty,
-           "presence_penalty":$presence_penalty
+            newRequestMessageJson.put("role", "user")
+            newRequestMessageJson.put("content", "$inputText")
         }
-    """
-        }
+        val promptJsonInit = messageStorage.readGptPrompt()
+        val previousMessagesArray = promptJsonInit.getJSONArray("messages")
+        previousMessagesArray.put(newRequestMessageJson)
 
+        val prompt = promptJsonInit.toString()
+//            """
+//        {
+//          "model": "$model",
+//          "messages": $promptJsonInit,
+//           "max_tokens": $max_tokens,
+//           "temperature": $temperature,
+//           "top_p": $top_p,
+//           "n": $n,
+//           "stream": $stream,
+//           "frequency_penalty":$frequency_penalty,
+//           "presence_penalty":$presence_penalty
+//        }
+//    """
+
+        val promptJson = JSONObject(prompt)
 
 
         Log.d("ddd gpt3 prompt", prompt)
@@ -265,7 +251,9 @@ class GoogleServices(private val assetManager: AssetManager ) {
 
                 }
                 try {
+
                     val json = JSONObject(responseBody!!.readUtf8())
+
                     val result = json.get("choices")
                     Log.d("GPT3 result", result.toString())
                     val resultJson = JSONArray(result.toString())
@@ -273,6 +261,14 @@ class GoogleServices(private val assetManager: AssetManager ) {
                     val resText = text["message"]
                     val content = JSONObject(resText.toString())
                     responseGPT3 = content["content"].toString().trim()
+
+                    val assistantResponse = JSONObject()
+                    assistantResponse.put("role", "assistant")
+                    assistantResponse.put("content", responseGPT3)
+                    val messagesArray = promptJson.getJSONArray("messages")
+                    messagesArray.put(assistantResponse)
+                    messageStorage.saveGptPrompt(promptJson.toString())
+
                     Log.d("GPT3", content.toString())
                 } catch (e: Exception) {
                     Log.d("GPT3 Error ",e.stackTraceToString() )
@@ -342,6 +338,7 @@ class GoogleServices(private val assetManager: AssetManager ) {
                     val resultJson = JSONObject(result.toString())
                     val text = resultJson.get("text")
                     responseText = text.toString()
+
                 } catch (e: JSONException) {
                     Log.e("Json Error: ", e.toString())
                 }

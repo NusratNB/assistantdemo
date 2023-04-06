@@ -28,6 +28,7 @@ import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
 import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
 import com.example.buddycareassistant.recordaudio.VoiceRecorder
 import com.example.buddycareassistant.service.AssistantService
+import com.example.buddycareassistant.storemessages.MessageStorage
 import com.konovalov.vad.VadConfig
 import java.io.File
 
@@ -59,14 +60,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var outputFile: File
     private lateinit var googlestt: GoogleServices
     private lateinit var handler: Handler
+    private lateinit var messageStorage: MessageStorage
     var audioManager: AudioManager? = null
     private lateinit var bluetoothController: BluetoothControllerImpl
     val time = Time()
     var isRecorderAvailable = true
+    private lateinit var storeAndRetrieveMessages: StoreAndRetrieveMessages
     private val DEFAULT_SAMPLE_RATE = VadConfig.SampleRate.SAMPLE_RATE_16K
     private val DEFAULT_FRAME_SIZE = VadConfig.FrameSize.FRAME_SIZE_160
     private val DEFAULT_MODE = VadConfig.Mode.VERY_AGGRESSIVE
-
     private val DEFAULT_SILENCE_DURATION = 500
     private val DEFAULT_VOICE_DURATION = 500
     private var config: VadConfig? = null
@@ -80,7 +82,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        googlestt = GoogleServices(assets)
+        googlestt = GoogleServices(this, assets)
         radioGroupLM = findViewById(R.id.radGroupLMType)
 //        recorder = AudioRecorder(this)
 
@@ -110,6 +112,8 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         voiceRecorder = VoiceRecorder(this, config)
+
+        messageStorage = MessageStorage(this)
 
         Log.d("scoTest", "MODIFY_AUDIO_SETTINGS: " + (ActivityCompat.checkSelfPermission(this, Manifest.permission.MODIFY_AUDIO_SETTINGS) == PackageManager.PERMISSION_GRANTED).toString())
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
@@ -425,13 +429,21 @@ class MainActivity : AppCompatActivity() {
 //                                ff.delete()
 //                            }
                             runOnUiThread {
-                                txtReceived.text = "Received: " + engToKor
+                                txtReceived.text = "Received: $engToKor"
                             }
                             playAudio()
                         }else{
                             googlestt.getResponseGPT3(gpt3Settings, korToEng){ responseFromGPT3->
                                 val engToKor = googlestt.googleTranslatorEnglishToKorean(responseFromGPT3)
-                                Log.d("ddd gpt3", responseFromGPT3)
+                                val userMessage = "User:$korToEng"
+                                val gptMessage = "Assistant:$responseFromGPT3"
+                                Log.d("messages", "User: $userMessage; gpt: $gptMessage")
+
+                                val messages = listOf(
+                                    Pair(userMessage, gptMessage)
+                                )
+                                messageStorage.storeMessages(messages)
+
                                 Log.d("ddd engToKor", engToKor)
 
                                 val time = Time()

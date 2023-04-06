@@ -1,6 +1,10 @@
 package com.example.buddycareassistant.storemessages
 
-data class MessagePair(val messageIndex:String,
-                       val user: String, val userMessage: String,
-                       val assistant: String, val assistantMessage: String)
+import android.os.Message
+
+data class MessagePair(val user: String, val userMessage: String,
+                       val assistant: String, val assistantMessage: String): java.io.Serializable
+
+
+data class MessageObj(val messagePairs: MutableList<MessagePair> = mutableListOf()): java.io.Serializable
 
