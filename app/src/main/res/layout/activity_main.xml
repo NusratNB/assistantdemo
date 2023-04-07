@@ -133,6 +133,13 @@
             </LinearLayout>
 
             <Button
+                android:id="@+id/btnNewChatRoom"
+                android:layout_width="330dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:text="New Chat"/>
+
+            <Button
                 android:id="@+id/btnSettings"
                 android:layout_width="330dp"
                 android:layout_height="wrap_content"
@@ -151,6 +158,8 @@
                 android:layout_height="wrap_content"
                 android:layout_margin="5dp"
                 android:text="Bluetooth Control Test"/>
+
+
 
             <Button
                 android:id="@+id/btnClovaSettings"

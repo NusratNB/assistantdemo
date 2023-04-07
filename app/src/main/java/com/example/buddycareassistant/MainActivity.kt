@@ -38,11 +38,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnPlay: Button
     private lateinit var btnStopAudio: Button
     private lateinit var btnInfo: Button
+    private lateinit var  btnNewChatRoom: Button
     private lateinit var btnSettings: Button
     private lateinit var btnBluetoothControl: Button
     private lateinit var fullAudioPath: File
     private lateinit var pathToRecords: File
     private lateinit var pathToSavingAudio: File
+    private lateinit var pathToSavingMessagesMainActivity: File
     private lateinit var txtSent: TextView
     private lateinit var txtReceived: TextView
     private lateinit var fileName: File
@@ -65,7 +67,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothController: BluetoothControllerImpl
     val time = Time()
     var isRecorderAvailable = true
-    private lateinit var storeAndRetrieveMessages: StoreAndRetrieveMessages
     private val DEFAULT_SAMPLE_RATE = VadConfig.SampleRate.SAMPLE_RATE_16K
     private val DEFAULT_FRAME_SIZE = VadConfig.FrameSize.FRAME_SIZE_160
     private val DEFAULT_MODE = VadConfig.Mode.VERY_AGGRESSIVE
@@ -114,6 +115,34 @@ class MainActivity : AppCompatActivity() {
         voiceRecorder = VoiceRecorder(this, config)
 
         messageStorage = MessageStorage(this)
+        btnNewChatRoom = findViewById(R.id.btnNewChatRoom)
+
+        btnNewChatRoom.setOnClickListener {
+            val gptPromptFileName = "GPTPrompt.txt"
+            pathToSavingMessagesMainActivity = File(this.externalCacheDir?.absolutePath, "Messages")
+            if (!pathToSavingMessagesMainActivity.exists()){
+                pathToSavingMessagesMainActivity.mkdir()
+            }
+            val tempText = """
+            {
+              "model": "gpt-3.5-turbo",
+              "messages": [
+                        {"role": "system", "content": "You are a helpful friend."}
+                    ],
+               "max_tokens": 200,
+               "temperature": 1.0,
+               "top_p": 1.0,
+               "n": 1,
+               "stream": false,
+               "frequency_penalty":0.0,
+               "presence_penalty":0.6
+            }
+        """
+            val file = File(pathToSavingMessagesMainActivity, gptPromptFileName)
+            messageStorage.saveGptPrompt(tempText)
+
+            Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
+        }
 
         Log.d("scoTest", "MODIFY_AUDIO_SETTINGS: " + (ActivityCompat.checkSelfPermission(this, Manifest.permission.MODIFY_AUDIO_SETTINGS) == PackageManager.PERMISSION_GRANTED).toString())
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
