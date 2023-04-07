@@ -555,6 +555,7 @@ class MainActivity : AppCompatActivity() {
         gpt3SettingsPreferences.putString("frequency_penalty", "0")
         gpt3SettingsPreferences.putString("presence_penalty", "0.6")
         gpt3SettingsPreferences.putString("language_model", "gpt-3")
+        gpt3SettingsPreferences.putString("chatWindowSize", "5")
         gpt3SettingsPreferences.putString("tokensCheckBox", "false")
         gpt3SettingsPreferences.apply()
 
@@ -571,14 +572,14 @@ class MainActivity : AppCompatActivity() {
         val logprobs = mPreferences.getString("logprobs", "null")
         val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
         val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
+        val chatWindowSize = mPreferences.getString("chatWindowSize", "5")
         val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
 
         val gpt3Settings = mapOf("model" to model, "max_tokens" to max_tokens, "temperature" to temperature,
                         "top_p" to top_p, "n" to n, "stream" to stream, "logprobs" to logprobs,
-                        "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty, "tokensCheckBox" to tokensInfo)
+                        "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty,
+                        "chatWindowSize" to chatWindowSize, "tokensCheckBox" to tokensInfo)
 
         return gpt3Settings
     }
-
-
 }

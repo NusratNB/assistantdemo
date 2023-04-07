@@ -183,6 +183,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         val frequency_penalty = gpt3Settings["frequency_penalty"]?.toFloat()
         val presence_penalty = gpt3Settings["presence_penalty"]?.toFloat()
         val tokensInfo = gpt3Settings["tokensCheckBox"]?.toBoolean()
+        val chatWindowSize = gpt3Settings["chatWindowSize"]?.toInt()
         if (logprobs != "null"){
             logprobs?.toInt()
         }
@@ -191,17 +192,39 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 
         val newRequestMessageJson = JSONObject()
 
+
+        val promptJsonInit = messageStorage.readGptPrompt()
+        val previousMessagesArray = promptJsonInit.getJSONArray("messages")
+        previousMessagesArray.put(newRequestMessageJson)
+        promptJsonInit.put("model", model)
+        promptJsonInit.put("max_tokens", max_tokens)
+        promptJsonInit.put("temperature", temperature)
+        promptJsonInit.put("top_p", top_p)
+        promptJsonInit.put("n", n)
+        promptJsonInit.put("stream", stream)
+        promptJsonInit.put("frequency_penalty", frequency_penalty)
+        promptJsonInit.put("presence_penalty", presence_penalty)
+
+        val newSlicedChatMessages = JSONArray()
+        val tempPrevMessages = promptJsonInit.getJSONArray("messages")
+        Log.d("ChatTest", "tempPrevMessages $tempPrevMessages")
+        if ((tempPrevMessages.length() -1)> (2*chatWindowSize!!)){
+            val startIndex = tempPrevMessages.length() - (2 * chatWindowSize)
+            newSlicedChatMessages.put(tempPrevMessages.get(0))
+            for ( i in (startIndex) until tempPrevMessages.length()){
+                newSlicedChatMessages.put(tempPrevMessages.get(i))
+            }
+            promptJsonInit.put("messages", newSlicedChatMessages)
+        }
+
         if (tokensInfo==true){
             newRequestMessageJson.put("role", "user")
             newRequestMessageJson.put("content", "$inputText. Make your response less than $max_tokens tokens")
 
         } else{
             newRequestMessageJson.put("role", "user")
-            newRequestMessageJson.put("content", "$inputText")
+            newRequestMessageJson.put("content", inputText)
         }
-        val promptJsonInit = messageStorage.readGptPrompt()
-        val previousMessagesArray = promptJsonInit.getJSONArray("messages")
-        previousMessagesArray.put(newRequestMessageJson)
 
         val prompt = promptJsonInit.toString()
 //            """

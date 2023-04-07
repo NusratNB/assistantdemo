@@ -31,6 +31,8 @@ class GPT3SettingsActivity : AppCompatActivity() {
     private lateinit var txtPresencePenalty: TextView
     private lateinit var txtFrequencyPenalty: TextView
     private lateinit var tokensCheckBox: CheckBox
+    private lateinit var txtChatWindow: TextView
+    private lateinit var etChatWindow: TextInputEditText
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
@@ -62,6 +64,8 @@ class GPT3SettingsActivity : AppCompatActivity() {
         txtPresencePenalty = findViewById(R.id.txtPresencePenalty)
         txtFrequencyPenalty = findViewById(R.id.txtFrequencyPenalty)
         tokensCheckBox = findViewById(R.id.tokensCheckBox)
+        txtChatWindow = findViewById(R.id.txtChatWindow)
+        etChatWindow = findViewById(R.id.etChatWindow)
 
         val model = mPreferences.getString("model", "gpt-3.5-turbo")
         val max_tokens = mPreferences.getString("max_tokens", "200")
@@ -73,6 +77,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
         val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
         val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
+        val chatWindowSize = mPreferences.getString("chatWindowSize", "5")
 
 
         /* Default-settings
@@ -211,6 +216,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
 
         etN.setText(n)
         etMaxTokens.setText(max_tokens)
+        etChatWindow.setText(chatWindowSize)
 
 
         txtModel.text = "model: $model"
@@ -219,12 +225,14 @@ class GPT3SettingsActivity : AppCompatActivity() {
         txtStream.text = "stream: $stream"
         txtLogProbs.text = "logprobs: $logprobs"
         tokensCheckBox.isChecked = tokensInfo.toBoolean()
+        txtChatWindow.text = "Chat Window Size: $chatWindowSize"
 
         btnSaveSettings.setOnClickListener {
             val spModelSelectedItem = spModel.selectedItem.toString()
             val spStreamSelectedItem = spStream.selectedItem.toString()
             val spLogProbsSelectedItem = spLogProbs.selectedItem.toString()
             val etMaxTokensInpText = etMaxTokens.text.toString()
+            val etChatWindowSizeText = etChatWindow.text.toString()
             val etNInpText = etN.text.toString()
 
             txtModel.text = "model: $spModelSelectedItem"
@@ -236,6 +244,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             txtLogProbs.text = "logprobs: $spLogProbsSelectedItem"
             txtPresencePenalty.text = "presence_penalty: $skPresencePenaltyValue"
             txtFrequencyPenalty.text = "frequency_penalty: $skFrequencyPenaltyValue"
+            txtChatWindow.text = "Chat Window Size: $etChatWindowSizeText"
 
 
             mPreferences.edit()
@@ -248,23 +257,14 @@ class GPT3SettingsActivity : AppCompatActivity() {
                 .putString("logprobs", spLogProbsSelectedItem)
                 .putString("frequency_penalty", skFrequencyPenaltyValue.toString())
                 .putString("presence_penalty", skPresencePenaltyValue.toString())
+                .putString("chatWindowSize", etChatWindowSizeText)
                 .putString("tokensCheckBox", tokensCheckBox.isChecked.toString())
                 .apply()
 
             Toast.makeText(this@GPT3SettingsActivity, "Settings updated", Toast.LENGTH_SHORT).show()
-
-//            Log.d("gpt3Set spModelSelectedItem", spModelSelectedItem)
-//            Log.d("gpt3Set spStreamSelectedItem", spStreamSelectedItem)
-//            Log.d("gpt3Set spLogProbsSelectedItem", spLogProbsSelectedItem)
-//            Log.d("gpt3Set etMaxTokensInpText", etMaxTokensInpText)
-//            Log.d("gpt3Set progressValueTemperature", progressValueTemperature.toString())
-//            Log.d("gpt3Set progressValueTopP", progressValueTopP.toString())
-//            Log.d("gpt3Set skPresencePenaltyValue", skPresencePenaltyValue.toString())
-//            Log.d("gpt3Set skFrequencyPenaltyValue", skFrequencyPenaltyValue.toString())
-//            Log.d("gpt3Set etNInpText", etNInpText)
-
-
         }
+
+
         btnResetDefault.setOnClickListener {
             val gpt3SettingsPreferences = mPreferences.edit()
             gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
@@ -276,6 +276,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             gpt3SettingsPreferences.putString("logprobs", "null")
             gpt3SettingsPreferences.putString("frequency_penalty", "0")
             gpt3SettingsPreferences.putString("presence_penalty", "0.6")
+            gpt3SettingsPreferences.putString("chatWindowSize", "5")
             gpt3SettingsPreferences.putString("tokensCheckBox", "false")
             gpt3SettingsPreferences.apply()
 
@@ -289,6 +290,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
             val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
             val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
+            val tempChatWindowSize = mPreferences.getString("chatWindowSize", "5")
 
 
             txtModel.text = "model: $model"
@@ -301,6 +303,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             txtFrequencyPenalty.text = "frequency_penalty: ${frequency_penalty?.toFloat()}"
             txtTopP.text = "top_p: ${top_p?.toFloat()}"
             tokensCheckBox.isChecked = tokensInfo.toBoolean()
+            txtChatWindow.text = "Chat Window Size: $tempChatWindowSize"
 
             etN.setText(n)
             etMaxTokens.setText(max_tokens)
@@ -328,6 +331,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             }else{
                 skTemperature.progress = 0
             }
+            etChatWindow.setText(tempChatWindowSize)
 
             val settedModelIndex = gpt3ModelOptions.indexOf(model)
             val settedStreamIndex = streamOptions.indexOf(stream.toBoolean())
