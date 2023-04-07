@@ -54,7 +54,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
     private var inputStream = assetManager.open(oauthKeyName)
     private val oauthKey = readFromInputStream(inputStream)
     private val mediaPlayer: MediaPlayer = MediaPlayer()
-    private val TIMEOUT_IN_SECONDS = 30
+    private val TIMEOUT_IN_SECONDS = 60
     private val messageStorage: MessageStorage = MessageStorage(context)
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
 
@@ -208,10 +208,11 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         val newSlicedChatMessages = JSONArray()
         val tempPrevMessages = promptJsonInit.getJSONArray("messages")
         Log.d("ChatTest", "tempPrevMessages $tempPrevMessages")
-        if ((tempPrevMessages.length() -1)> (2*chatWindowSize!!)){
-            val startIndex = tempPrevMessages.length() - (2 * chatWindowSize)
+        Log.d("ChatTest", "tempPrevMessages length: ${tempPrevMessages.length()}; chatWindowSize: $chatWindowSize")
+        if ((tempPrevMessages.length() - 1) > (2*chatWindowSize!!)){
+            val startIndex = tempPrevMessages.length() - 1 - (2 * chatWindowSize)
             newSlicedChatMessages.put(tempPrevMessages.get(0))
-            for ( i in (startIndex) until tempPrevMessages.length()){
+            for ( i in startIndex until tempPrevMessages.length()){
                 newSlicedChatMessages.put(tempPrevMessages.get(i))
             }
             promptJsonInit.put("messages", newSlicedChatMessages)
