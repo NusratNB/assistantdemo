@@ -22,7 +22,7 @@ open class AssistantService : Service() {
     private lateinit var mPreferences: SharedPreferences
     private lateinit var recorder: AudioRecorder
     private val time = Time()
-    private lateinit var outputFile: File
+    lateinit var outputFile: File
     private lateinit var pathToRecords: File
 
     override fun onCreate() {

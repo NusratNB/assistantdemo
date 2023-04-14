@@ -2,16 +2,18 @@ package com.example.buddycareassistant
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothHeadset
+import android.bluetooth.BluetoothProfile
+import android.content.*
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.IBinder
 import android.text.format.Time
 import android.util.Log
 import android.widget.Button
@@ -31,6 +33,7 @@ import com.example.buddycareassistant.service.AssistantService
 import com.example.buddycareassistant.storemessages.MessageStorage
 import com.konovalov.vad.VadConfig
 import java.io.File
+import java.io.IOException
 
 
 class MainActivity : AppCompatActivity() {
@@ -67,6 +70,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bluetoothController: BluetoothControllerImpl
     val time = Time()
     var isRecorderAvailable = true
+    private val REQUEST_ENABLE_BT = 1
+    private val PERMISSION_REQUEST_CODE = 2
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var bluetoothHeadset: BluetoothHeadset? = null
     private val DEFAULT_SAMPLE_RATE = VadConfig.SampleRate.SAMPLE_RATE_16K
     private val DEFAULT_FRAME_SIZE = VadConfig.FrameSize.FRAME_SIZE_160
     private val DEFAULT_MODE = VadConfig.Mode.VERY_AGGRESSIVE
@@ -74,15 +81,75 @@ class MainActivity : AppCompatActivity() {
     private val DEFAULT_VOICE_DURATION = 500
     private var config: VadConfig? = null
     private lateinit var voiceRecorder: VoiceRecorder
+    private var deviceBluetooth: BluetoothDevice? = null
+    private var isRecordingAvailable = true
+    private val TAG = this::class.java.simpleName
+    private val targetDeviceName =  "DT AudioBF19"
+    private val BEGINNING_ALERT = "alerts/Beginning.mp3"
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
+    }
+    private var foregroundBleService: AssistantService? = null
+    private val serviceConnection by lazy {
+        object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                foregroundBleService = (service as AssistantService.LocalBinder).service
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+                foregroundBleService = null
+            }
+        }
+    }
+    private val profileListener = object : BluetoothProfile.ServiceListener {
+        override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+            if (profile == BluetoothProfile.HEADSET) {
+                bluetoothHeadset = proxy as BluetoothHeadset
+            }
+        }
+
+        override fun onServiceDisconnected(profile: Int) {
+            if (profile == BluetoothProfile.HEADSET) {
+                bluetoothHeadset = null
+            }
+        }
+    }
+
+    private val audioStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT)
+            if (intent.action == BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED) {
+                val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
+                Log.d(TAG, "current state: $state")
+                if (state == BluetoothHeadset.STATE_AUDIO_CONNECTED) {
+                    if (isRecordingAvailable) {
+                        bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
+                        btnRecord.text = "Recording"
+                        startRecording()
+                        isRecordingAvailable = false
+                    }
+                } else if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED) {
+                    if (!isRecordingAvailable){
+                        bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
+                        stopRecording()
+                        btnRecord.text = "Record"
+                        isRecordingAvailable = true
+                        playingAvailable = true
+                        assistantDemoHelper()
+                    }
+                    // Voice recognition is not supported by the connected Bluetooth headset
+                }
+            }
+        }
     }
 
 
 //    @RequiresApi(Build.VERSION_CODES.S)
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        bindService(Intent(this, AssistantService::class.java), serviceConnection, BIND_AUTO_CREATE)
         googlestt = GoogleServices(this, assets)
         radioGroupLM = findViewById(R.id.radGroupLMType)
 //        recorder = AudioRecorder(this)
@@ -101,7 +168,8 @@ class MainActivity : AppCompatActivity() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
-                Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION),200);
+                Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.MODIFY_PHONE_STATE),200);
         }
 
         config = VadConfig.newBuilder()
@@ -144,6 +212,20 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
         }
 
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+        if (bluetoothAdapter == null) {
+            // Device doesn't support Bluetooth
+            return
+        }
+
+        if (!bluetoothAdapter!!.isEnabled) {
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        } else {
+            setupBluetoothHeadset()
+        }
+
         Log.d("scoTest", "MODIFY_AUDIO_SETTINGS: " + (ActivityCompat.checkSelfPermission(this, Manifest.permission.MODIFY_AUDIO_SETTINGS) == PackageManager.PERMISSION_GRANTED).toString())
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
         if (!pathToRecords.exists()){
@@ -181,10 +263,10 @@ class MainActivity : AppCompatActivity() {
         }
         btnRecord.setOnClickListener {
 //            recorder.stop()
-            stopRecording()
+            toggleVoiceRecognition()
 
 //            recorder.stopRecording()
-            btnRecord.text = "Start"
+            btnRecord.text = "Record"
             isRecorderAvailable = true
         }
         btnStopAudio.setOnClickListener {
@@ -262,8 +344,6 @@ class MainActivity : AppCompatActivity() {
             startService(intent)
         }
     }
-
-//    @RequiresApi(Build.VERSION_CODES.S)
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString("txtSentText", txtSent.text.toString())
@@ -296,7 +376,20 @@ class MainActivity : AppCompatActivity() {
                 isMediaPlayerSilenceInitialized = false
             }
 
-            assistantDemo()
+            try {
+                val assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
+                mediaPlayer = MediaPlayer().apply {
+                    setDataSource(assetFileDescriptor.fileDescriptor, assetFileDescriptor.startOffset, assetFileDescriptor.length)
+                    setOnCompletionListener {
+                        // Call assistantDemoHelper() function after the audio has finished playing
+                        toggleVoiceRecognition()
+                    }
+                    prepare()
+                    start()
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -312,99 +405,43 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-    private val mBluetoothScoReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        @RequiresApi(Build.VERSION_CODES.O)
-        override fun onReceive(context: Context, intent: Intent) {
-            val state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
-            Log.d("scoTest", "ANDROID Audio SCO state: $state")
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun toggleVoiceRecognition() {
+        ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT)
+        val connectedDevices = bluetoothHeadset?.connectedDevices
+        deviceBluetooth = connectedDevices!!.get(0)
+//        for (dd in connectedDevices!!){
+//            if (dd.name == targetDeviceName){
+//                deviceBluetooth = dd
+//            }
+//        }
+        if (isRecordingAvailable){
+            bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
+            btnRecord.text = "Recording"
             time.setToNow()
-            Log.d("scoTest Time", time.format("%Y%m%d%H%M%S"))
-            Log.d("scoTest", "state " + state + " " +
-                    audioManager!!.isBluetoothScoOn + " " + audioManager!!.isSpeakerphoneOn
-            )
-            if (AudioManager.SCO_AUDIO_STATE_CONNECTED == state) {
-                Log.d("scoTest", "Recording started")
-                isRecorderAvailable = false
-                time.setToNow()
 
-                val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-                outputFile = File(pathToRecords, audioName)
-//                recorder.start(outputFile)
-
-                startRecording()
-
-//                recorder.startRecording(outputFile)
-//                voiceRecorder.start(outputFile)
-                btnRecord.text = "Recording"
-
-
-            } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {
-                if (!isRecorderAvailable) {
-                    Log.d("scoTest", "Disconnected, disable sco")
-                    disableVoiceRecord()
-                    isRecorderAvailable = true
-                    assistantDemoHelper()
-                }
-            }
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.M)
-    private fun enableVoiceRecord() {
-        val intentFilter = IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)
-        this.registerReceiver( mBluetoothScoReceiver, intentFilter)
-        audioManager = this.getSystemService(AudioManager::class.java)
-        audioManager!!.mode = AudioManager.MODE_NORMAL
-        audioManager!!.isBluetoothScoOn = true
-        audioManager!!.startBluetoothSco()
-
-        audioManager!!.isSpeakerphoneOn = false;
-
-
-    }
-
-    @SuppressLint("WrongConstant")
-    fun disableVoiceRecord() {
-        try {
-            this.unregisterReceiver(mBluetoothScoReceiver)
-        } catch (_: Exception) {
-        }
-        // Stop Bluetooth SCO.
-        audioManager!!.mode = AudioManager.MODE_NORMAL
-        audioManager!!.isBluetoothScoOn = false
-        audioManager!!.stopBluetoothSco()
-
-        // Start Speaker.
-        audioManager!!.isSpeakerphoneOn = true
-    }
-
-//    @RequiresApi(Build.VERSION_CODES.S)
-    private fun assistantDemo() {
-
-        if (isRecorderAvailable) {
-            enableVoiceRecord()
-//            start()
-
-        } else {
-//            stop()
+            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+            outputFile = File(pathToRecords, audioName)
+            startRecording()
+            isRecordingAvailable = false
+        } else{
+            bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
+            stopRecording()
+            btnRecord.text = "Record"
+            isRecordingAvailable = true
+            playingAvailable = true
             assistantDemoHelper()
         }
     }
-
-//    @RequiresApi(Build.VERSION_CODES.M)
-    @RequiresApi(Build.VERSION_CODES.M)
     private fun assistantDemoHelper(){
-//        recorder.stop()
-        stopRecording()
-
-//        recorder.stopRecording()
-//        voiceRecorder.stop()
-        btnRecord.text = "Start"
-        isRecorderAvailable = true
-        fileName = outputFile// audioRecorder.audioName
-        playingAvailable = true
-
+        if (!isRecordingAvailable){
+            stopRecording()
+            btnRecord.text = "Start"
+            isRecorderAvailable = true
+            // audioRecorder.audioName
+            playingAvailable = true
+        }
+        fileName = foregroundBleService?.outputFile!!
         if (fileName.path.isNotEmpty()){
             Thread {
                 val ttt = googlestt.getSTTText(fileName.path)
@@ -503,6 +540,39 @@ class MainActivity : AppCompatActivity() {
         }else{
             Toast.makeText(this, "Record audio", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun setupBluetoothHeadset() {
+        bluetoothAdapter?.getProfileProxy(this, profileListener, BluetoothProfile.HEADSET)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val filter = IntentFilter(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
+
+        registerReceiver(audioStateReceiver, filter)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(audioStateReceiver)
+//        unregisterReceiver(mBlu)
+    }
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_ENABLE_BT && resultCode == RESULT_OK) {
+            setupBluetoothHeadset()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    override fun onDestroy() {
+        super.onDestroy()
+//        mediaSessionManager.removeOnActiveSessionsChangedListener(activeSessionsChangedListener)
+        bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset)
+//        unregisterReceiver(audioStateChangedReceiver)
     }
 
 
