@@ -82,6 +82,8 @@ class MainActivity : AppCompatActivity() {
         object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 foregroundBleService = (service as AssistantService.LocalBinder).service
+                foregroundBleService?.isNeverClova =
+                    !mPreferences.getString("language_model", "gpt-3").equals("gpt-3")
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
@@ -305,6 +307,7 @@ class MainActivity : AppCompatActivity() {
                 val isNeverClova = intent?.getBooleanExtra("isNeverClova", false)
                 val data = intent?.getStringExtra("data")
                 val responseText = intent?.getStringExtra("responseText")
+                val isRecording = intent?.getStringExtra("isRecording")
 
                 if (isReceived == true) {
                     if (isNeverClova == true) {

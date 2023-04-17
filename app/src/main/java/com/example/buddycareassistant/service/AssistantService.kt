@@ -229,6 +229,7 @@ open class AssistantService : Service() {
                                 putExtra("isNeverClova", true)
                                 putExtra("data", ttt)
                                 putExtra("responseText", responseFromNaverClova)
+                                putExtra("isRecording", isRecordingAvailable)
                             })
                             playAudio()
                         }
@@ -303,7 +304,8 @@ open class AssistantService : Service() {
                                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                     putExtra("isReceived", true)
                                     putExtra("isNeverClova", false)
-                                    putExtra("data", engToKor)
+                                    putExtra("data", ttt)
+                                    putExtra("responseText", engToKor)
                                 })
                                 playAudio()
                             }
