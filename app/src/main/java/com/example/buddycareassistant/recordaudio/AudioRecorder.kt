@@ -27,13 +27,6 @@ class AudioRecorder(private val ctx: Context) {
         private var isRecording = false
     private var recorder = MediaRecorder()
 
-
-
-
-
-
-
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun startRecording(outputFile: File) {
         Log.d("audioPermission", "Status: ${ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)}")
@@ -61,7 +54,7 @@ class AudioRecorder(private val ctx: Context) {
             audioRecord?.startRecording()
         }
 
-        Log.d("scoTest ", "AudioRecorder file path $outputFile")
+//        Log.d("scoTest ", "AudioRecorder file path $outputFile")
 
         isRecording = true
         Thread(Runnable {
