@@ -1,15 +1,12 @@
 package com.example.buddycareassistant
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
-import android.bluetooth.BluetoothProfile
 import android.content.*
 import android.content.pm.PackageManager
 import android.media.AudioManager
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.*
 import android.provider.Settings
@@ -32,7 +29,6 @@ import com.example.buddycareassistant.service.AssistantService
 import com.example.buddycareassistant.storemessages.MessageStorage
 import com.konovalov.vad.VadConfig
 import java.io.File
-import java.io.IOException
 
 
 class MainActivity : AppCompatActivity() {
@@ -57,7 +53,6 @@ class MainActivity : AppCompatActivity() {
     val time = Time()
     var isRecorderAvailable = true
     private val REQUEST_ENABLE_BT = 1
-    private val PERMISSION_REQUEST_CODE = 2
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothHeadset: BluetoothHeadset? = null
     private val DEFAULT_SAMPLE_RATE = VadConfig.SampleRate.SAMPLE_RATE_16K
@@ -122,8 +117,8 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.MODIFY_PHONE_STATE, Manifest.permission.WAKE_LOCK),200);
         }
 
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::PartialWakeLock")
+//        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+//        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::PartialWakeLock")
 
         config = VadConfig.newBuilder()
             .setSampleRate(DEFAULT_SAMPLE_RATE)
@@ -165,24 +160,24 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
         }
 
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+//        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+//
+//        if (bluetoothAdapter == null) {
+//            // Device doesn't support Bluetooth
+//            return
+//        }
 
-        if (bluetoothAdapter == null) {
-            // Device doesn't support Bluetooth
-            return
-        }
-
-        pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
-        if (!pathToRecords.exists()){
-            pathToRecords.mkdir()
-        }
-        bluetoothController = BluetoothControllerImpl(this)
-
-        pathToSavingAudio = File(externalCacheDir?.absoluteFile, "SavedRecordings" )
-        if (!pathToSavingAudio.exists()){
-            pathToSavingAudio.mkdir()
-            initGPT3Settings()
-        }
+//        pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
+//        if (!pathToRecords.exists()){
+//            pathToRecords.mkdir()
+//        }
+//        bluetoothController = BluetoothControllerImpl(this)
+//
+//        pathToSavingAudio = File(externalCacheDir?.absoluteFile, "SavedRecordings" )
+//        if (!pathToSavingAudio.exists()){
+//            pathToSavingAudio.mkdir()
+//            initGPT3Settings()
+//        }
         btnBluetoothControl = findViewById(R.id.btnBluetoothControl)
         btnBluetoothControl.setOnClickListener {
             startActivity(Intent(this@MainActivity, BluetoothControlActivity::class.java))
@@ -204,7 +199,7 @@ class MainActivity : AppCompatActivity() {
         btnSettings.setOnClickListener {
             startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
         }
-        requestDisableBatteryOptimization()
+//        requestDisableBatteryOptimization()
 
         btnStopAudio.setOnClickListener {
             foregroundBleService?.stopPlayer()
@@ -256,15 +251,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestDisableBatteryOptimization() {
-        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-            data = Uri.parse("package:$packageName")
-        }
-        if (intent.resolveActivity(packageManager) != null) {
-            startActivity(intent)
-        }
-    }
-
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -274,24 +260,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initGPT3Settings(){
-        val gpt3SettingsPreferences = mPreferences.edit()
-        gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
-        gpt3SettingsPreferences.putString("max_tokens", "200")
-        gpt3SettingsPreferences.putString("temperature", "1")
-        gpt3SettingsPreferences.putString("top_p", "1")
-        gpt3SettingsPreferences.putString("n", "1")
-        gpt3SettingsPreferences.putString("stream", "false")
-        gpt3SettingsPreferences.putString("logprobs", "null")
-        gpt3SettingsPreferences.putString("frequency_penalty", "0")
-        gpt3SettingsPreferences.putString("presence_penalty", "0.6")
-        gpt3SettingsPreferences.putString("language_model", "gpt-3")
-        gpt3SettingsPreferences.putString("chatWindowSize", "5")
-        gpt3SettingsPreferences.putString("tokensCheckBox", "false")
-        gpt3SettingsPreferences.apply()
 
-
-    }
 
     inner class UIReceiver: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {

@@ -1,6 +1,5 @@
 package com.example.buddycareassistant.service
 
-import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,19 +9,18 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothProfile
 import android.content.*
+import android.content.res.AssetFileDescriptor
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.SoundPool
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
-import android.os.PowerManager
 import android.text.format.Time
 import android.util.Log
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
-import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.core.app.NotificationCompat
 import com.example.buddycareassistant.MainActivity
 import com.example.buddycareassistant.R
@@ -31,6 +29,10 @@ import com.example.buddycareassistant.recordaudio.AudioRecorder
 import com.example.buddycareassistant.storemessages.MessageStorage
 import java.io.File
 import java.io.IOException
+import android.media.RingtoneManager
+import android.net.Uri
+import java.io.FileOutputStream
+import java.io.InputStream
 
 open class AssistantService : Service() {
     private var FOREGROUND_CHANNEL_ID = "ASSISTANT_CHANNEL"
@@ -54,12 +56,15 @@ open class AssistantService : Service() {
     private var audioFilePath = ""
     private var mediaPlayer: MediaPlayer = MediaPlayer()
     private var mediaPlayerSilence: MediaPlayer = MediaPlayer()
+    private var mediaPlayerBeginningAlert: MediaPlayer = MediaPlayer()
     private var isMediaPlayerInitialized = true
     private var isMediaPlayerSilenceInitialized = true
+    private var isMediaPlayerBeginningAlertInitialized = true
     private val BEGINNING_ALERT = "alerts/Beginning.mp3"
     private lateinit var soundPool: SoundPool
+    private lateinit var assetFileDescriptor: AssetFileDescriptor
     private var soundId = 0
-    private lateinit var wakeLock: PowerManager.WakeLock
+//    private lateinit var wakeLock: PowerManager.WakeLock
     var isNeverClova: Boolean = false
 
     override fun onCreate() {
@@ -76,24 +81,27 @@ open class AssistantService : Service() {
         pathToSavingAudio = File(externalCacheDir?.absoluteFile, "SavedRecordings")
         if (!pathToSavingAudio.exists()) {
             pathToSavingAudio.mkdir()
-//            initGPT3Settings()
+            initGPT3Settings()
         }
-        val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-            .build()
 
-        soundPool = SoundPool.Builder()
-            .setMaxStreams(1)
-            .setAudioAttributes(audioAttributes)
-            .build()
+//        assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
+
+//        mediaPlayerBeginningAlert = MediaPlayer()
+//        val audioAttributes = AudioAttributes.Builder()
+//            .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+//            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+//            .build()
+//
+//
+//
+//        soundPool =
+//            SoundPool.Builder()
+//                .setMaxStreams(10)
+//                .setAudioAttributes(audioAttributes)
+//                .build()
+//        soundId = soundPool.load(assets.openFd(BEGINNING_ALERT), 1)
+
         isNeverClova = !mPreferences.getString("language_model", "gpt-3").equals("gpt-3")
-
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock =
-            powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AssistantService::WakeLock")
-        wakeLock.acquire()
-
         messageStorage = MessageStorage(this)
         setupBluetoothHeadset()
         val filter = IntentFilter(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
@@ -110,7 +118,7 @@ open class AssistantService : Service() {
             if (profile == BluetoothProfile.HEADSET) {
                 bluetoothHeadset = proxy as BluetoothHeadset
                 val connectedDevices = bluetoothHeadset?.connectedDevices
-                deviceBluetooth = connectedDevices!!.get(0)
+                deviceBluetooth = connectedDevices!![0]
             }
         }
 
@@ -134,7 +142,12 @@ open class AssistantService : Service() {
                         sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
                             putExtra("isRecording", true)
                         })
-                        startRecording()
+//                        playNotification()
+//                        startRecording()
+                        playNotification()
+                        Handler().postDelayed({
+                            startVoiceCommand()
+                        }, 1000)
                         isRecordingAvailable = false
                     }
                 } else if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED) {
@@ -153,33 +166,6 @@ open class AssistantService : Service() {
             }
         }
     }
-
-//    private val audioStateReceiver = object : BroadcastReceiver() {
-//        override fun onReceive(context: Context, intent: Intent) {
-//            // ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT)
-//            if (intent.action == BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED) {
-//                val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
-//                Log.d(TAG, "service current state: $state")
-//                if (state == BluetoothHeadset.STATE_AUDIO_CONNECTED) {
-//                    if (isRecordingAvailable) {
-//                     //   bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
-//                        // btnRecord.text = "Recording"
-//                        startRecording()
-//                        isRecordingAvailable = false
-//                    }
-//                } else if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED) {
-//                    if (!isRecordingAvailable) {
-//                    //    bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
-//                        stopRecording()
-//                        //btnRecord.text = "Record"
-//                        isRecordingAvailable = true
-//                        playingAvailable = true
-//                        assistantDemoHelper()
-//                    }
-//                }
-//            }
-//        }
-//    }
 
     private fun assistantDemoHelper() {
         if (!isRecordingAvailable) {
@@ -257,9 +243,6 @@ open class AssistantService : Service() {
 //                                val ff = File(prevRecAudio)
 //                                ff.delete()
 //                            }
-//                            runOnUiThread {
-//                                txtReceived.text = "Received: $engToKor"
-//                            }
                             sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                 putExtra("isReceived", true)
                                 putExtra("isNeverClova", false)
@@ -298,9 +281,6 @@ open class AssistantService : Service() {
 //                                val ff = File(prevRecAudio)
 //                                ff.delete()
 //                            }
-//                                runOnUiThread {
-//                                    txtReceived.text = "Received: " + engToKor
-//                                }
                                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                     putExtra("isReceived", true)
                                     putExtra("isNeverClova", false)
@@ -315,7 +295,6 @@ open class AssistantService : Service() {
                 }.start()
             }.start()
 
-//        }.start()
         } else {
             Toast.makeText(this, "Record audio", Toast.LENGTH_SHORT).show()
         }
@@ -349,6 +328,7 @@ open class AssistantService : Service() {
                     mediaPlayerSilence.start()
                 }
                 mediaPlayer.start()
+                playingAvailable = false
 
             }
             //            if (prevSentAudio?.path?.isNotEmpty() == true){
@@ -380,16 +360,24 @@ open class AssistantService : Service() {
         val action = intent.action
         Log.d("action in foreground: ", "$action")
         if (action == START_ACTION) {
-            startRecording()
+//            startRecording()
+            playNotification()
+            Handler().postDelayed({
+                startVoiceCommand()
+            }, 1000)
         } else if (action == STOP_ACTION) {
             stopRecording()
         } else if (action == START_VOICE_COMMAND_ACTION) {
-            startVoiceCommand()
+            playNotification()
+            Handler().postDelayed({
+                startVoiceCommand()
+            }, 1000)
+
         }
         return START_NOT_STICKY
     }
 
-    fun startVoiceCommand() {
+    private fun playNotification(){
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
             mediaPlayer.reset()
@@ -400,30 +388,88 @@ open class AssistantService : Service() {
             mediaPlayerSilence.reset()
             isMediaPlayerSilenceInitialized = false
         }
+
+
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(1)
+            .build()
+
+        soundPool.setOnLoadCompleteListener { soundPool, sampleId, status ->
+            if (status == 0) {
+                soundPool.play(sampleId, 1f, 1f, 1, 0, 1f)
+            }
+        }
         try {
             val assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
-            time.setToNow()
-            Log.d("timeMeasure", "Time before media player: ${System.currentTimeMillis()}")
-            mediaPlayer = MediaPlayer().apply {
-                setVolume(1f, 1f)
-                setDataSource(
-                    assetFileDescriptor.fileDescriptor,
-                    assetFileDescriptor.startOffset,
-                    assetFileDescriptor.length
-                )
-//                setOnCompletionListener {
-//                    time.setToNow()
-//                    Log.d("timeMeasure", "Time before startRecording(): ${System.currentTimeMillis()}")
-//                }
-                prepare()
-                start()
+            soundId = soundPool.load(assetFileDescriptor, 1)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
 
-            }
+//        if (!isMediaPlayerBeginningAlertInitialized){
+//            mediaPlayerBeginningAlert = MediaPlayer()
+//        }
+//
+//        mediaPlayerBeginningAlert.apply {
+//            setVolume(1f, 1f)
+//            setDataSource(assetFileDescriptor.createInputStream().fd)
+//            prepare()
+//                }
+//        mediaPlayerBeginningAlert.setOnCompletionListener{startVoiceCommand()}
+////        mediaPlayerBeginningAlert.setDataSource(assetFileDescriptor.fileDescriptor,
+////            assetFileDescriptor.startOffset,
+////            assetFileDescriptor.length)
+////        mediaPlayerBeginningAlert.p
+//        mediaPlayerBeginningAlert.start()
+//        mediaPlayerBeginningAlert.setOnCompletionListener { mp -> mp.release() }
+
+
+
+    }
+
+
+    fun startVoiceCommand() {
+//        if (mediaPlayer.isPlaying) {
+//            mediaPlayer.stop()
+//            mediaPlayer.reset()
+//            isMediaPlayerInitialized = false
+//        }
+//        if (mediaPlayerSilence.isPlaying) {
+//            mediaPlayerSilence.stop()
+//            mediaPlayerSilence.reset()
+//            isMediaPlayerSilenceInitialized = false
+//        }
+        Log.d("mediaPlayerr", "is Mediaplayer active: ${mediaPlayerBeginningAlert.isPlaying}")
+        try {
+//            val assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
+//            time.setToNow()
+//            Log.d("timeMeasure", "Time before media player: ${System.currentTimeMillis()}")
+//            mediaPlayer = MediaPlayer().apply {
+//                setVolume(1f, 1f)
+//                setDataSource(
+//                    assetFileDescriptor.fileDescriptor,
+//                    assetFileDescriptor.startOffset,
+//                    assetFileDescriptor.length
+//                )
+////                setOnCompletionListener {
+////                    time.setToNow()
+////                    Log.d("timeMeasure", "Time before startRecording(): ${System.currentTimeMillis()}")
+////                }
+//                prepare()
+//                start()
+//
+//            }
+//            soundPool.play(soundId, 1f, 1f, 0, 0,1f)
+//            soundPool.setOnLoadCompleteListener { _, _, _ ->
+//                soundPool.play(soundId, 1f, 1f, 1, 0, 1f)
+//            }
+            Log.d("soundpool", soundId.toString())
 //            time.setToNow()
 //            Log.d("timeMeasure", "Time before startRecording(): ${System.currentTimeMillis()}")
-            Handler().postDelayed({
-                startRecording()
-            }, 1000)
+            startRecording()
+//            Handler().postDelayed({
+//                startRecording()
+//            }, 1000)
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -450,6 +496,25 @@ open class AssistantService : Service() {
         )
 
         return gpt3Settings
+    }
+
+    private fun initGPT3Settings(){
+        val gpt3SettingsPreferences = mPreferences.edit()
+        gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
+        gpt3SettingsPreferences.putString("max_tokens", "200")
+        gpt3SettingsPreferences.putString("temperature", "1")
+        gpt3SettingsPreferences.putString("top_p", "1")
+        gpt3SettingsPreferences.putString("n", "1")
+        gpt3SettingsPreferences.putString("stream", "false")
+        gpt3SettingsPreferences.putString("logprobs", "null")
+        gpt3SettingsPreferences.putString("frequency_penalty", "0")
+        gpt3SettingsPreferences.putString("presence_penalty", "0.6")
+        gpt3SettingsPreferences.putString("language_model", "gpt-3")
+        gpt3SettingsPreferences.putString("chatWindowSize", "5")
+        gpt3SettingsPreferences.putString("tokensCheckBox", "false")
+        gpt3SettingsPreferences.apply()
+
+
     }
 
     private fun prepareNotification(): Notification {
@@ -495,9 +560,8 @@ open class AssistantService : Service() {
     }
 
     override fun onDestroy() {
-//        unregisterReceiver(audioStateReceiver)
         unregisterReceiver(AudioStateReceiver())
-        wakeLock.release()
+        soundPool.release()
         bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset)
         super.onDestroy()
     }
