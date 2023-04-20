@@ -80,7 +80,6 @@ class MessageStorage(private val context: Context) {
         } catch (e: IOException) {
             println("Error occurred while saving the text: ${e.message}")
         }
-
     }
 
     fun readGptPrompt(): JSONObject {
@@ -124,31 +123,29 @@ class MessageStorage(private val context: Context) {
 
     }
 
-
-
-    fun retrieveMessages(): List<Pair<String, String>> {
-        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName)
-
-        if (!file.exists()) return emptyList()
-
-        return try {
-            FileInputStream(file).use { inputStream ->
-                val messageList = mutableListOf<Pair<String, String>>()
-                inputStream.bufferedReader().useLines { lines ->
-                    lines.forEach { line ->
-                        val separatorIndex = line.indexOf(":")
-                        if (separatorIndex > 0) {
-                            val user = line.substring(0, separatorIndex).trim()
-                            val message = line.substring(separatorIndex + 1).trim()
-                            messageList.add(Pair(user, message))
-                        }
-                    }
-                }
-                messageList
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            emptyList()
-        }
-    }
+//    fun retrieveMessages(): List<Pair<String, String>> {
+//        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName)
+//
+//        if (!file.exists()) return emptyList()
+//
+//        return try {
+//            FileInputStream(file).use { inputStream ->
+//                val messageList = mutableListOf<Pair<String, String>>()
+//                inputStream.bufferedReader().useLines { lines ->
+//                    lines.forEach { line ->
+//                        val separatorIndex = line.indexOf(":")
+//                        if (separatorIndex > 0) {
+//                            val user = line.substring(0, separatorIndex).trim()
+//                            val message = line.substring(separatorIndex + 1).trim()
+//                            messageList.add(Pair(user, message))
+//                        }
+//                    }
+//                }
+//                messageList
+//            }
+//        } catch (e: IOException) {
+//            e.printStackTrace()
+//            emptyList()
+//        }
+//    }
 }

@@ -9,9 +9,6 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothProfile
 import android.content.*
-import android.content.res.AssetFileDescriptor
-import android.media.AudioAttributes
-import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.SoundPool
 import android.os.Binder
@@ -29,10 +26,6 @@ import com.example.buddycareassistant.recordaudio.AudioRecorder
 import com.example.buddycareassistant.storemessages.MessageStorage
 import java.io.File
 import java.io.IOException
-import android.media.RingtoneManager
-import android.net.Uri
-import java.io.FileOutputStream
-import java.io.InputStream
 
 open class AssistantService : Service() {
     private var FOREGROUND_CHANNEL_ID = "ASSISTANT_CHANNEL"
@@ -56,15 +49,13 @@ open class AssistantService : Service() {
     private var audioFilePath = ""
     private var mediaPlayer: MediaPlayer = MediaPlayer()
     private var mediaPlayerSilence: MediaPlayer = MediaPlayer()
-    private var mediaPlayerBeginningAlert: MediaPlayer = MediaPlayer()
     private var isMediaPlayerInitialized = true
     private var isMediaPlayerSilenceInitialized = true
-    private var isMediaPlayerBeginningAlertInitialized = true
-    private val BEGINNING_ALERT = "alerts/Beginning.mp3"
+    private val BEGINNING_ALERT = "alerts/Beginning_alt.mp3"
+    private val END_ALERT = "alerts/End.mp3"
     private lateinit var soundPool: SoundPool
-    private lateinit var assetFileDescriptor: AssetFileDescriptor
+    private lateinit var soundPoolEndNotification: SoundPool
     private var soundId = 0
-//    private lateinit var wakeLock: PowerManager.WakeLock
     var isNeverClova: Boolean = false
 
     override fun onCreate() {
@@ -84,28 +75,10 @@ open class AssistantService : Service() {
             initGPT3Settings()
         }
 
-//        assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
-
-//        mediaPlayerBeginningAlert = MediaPlayer()
-//        val audioAttributes = AudioAttributes.Builder()
-//            .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
-//            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-//            .build()
-//
-//
-//
-//        soundPool =
-//            SoundPool.Builder()
-//                .setMaxStreams(10)
-//                .setAudioAttributes(audioAttributes)
-//                .build()
-//        soundId = soundPool.load(assets.openFd(BEGINNING_ALERT), 1)
-
         isNeverClova = !mPreferences.getString("language_model", "gpt-3").equals("gpt-3")
         messageStorage = MessageStorage(this)
         setupBluetoothHeadset()
         val filter = IntentFilter(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
-//        registerReceiver(audioStateReceiver, filter)
         registerReceiver(AudioStateReceiver(), filter)
     }
 
@@ -137,30 +110,15 @@ open class AssistantService : Service() {
                 Log.d(TAG, "service current state: $state")
                 if (state == BluetoothHeadset.STATE_AUDIO_CONNECTED) {
                     if (isRecordingAvailable) {
-                        //   bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
-                        // btnRecord.text = "Recording"
                         sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
                             putExtra("isRecording", true)
                         })
-//                        playNotification()
-//                        startRecording()
-                        playNotification()
-                        Handler().postDelayed({
-                            startVoiceCommand()
-                        }, 1000)
+                        startVoiceCommand()
                         isRecordingAvailable = false
                     }
                 } else if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED) {
                     if (!isRecordingAvailable) {
-                        //    bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
-                        stopRecording()
-                        //btnRecord.text = "Record"
-                        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-                            putExtra("isRecording", false)
-                        })
-                        isRecordingAvailable = true
-                        playingAvailable = true
-                        assistantDemoHelper()
+                        stopRecordingAndPlayNotification()
                     }
                 }
             }
@@ -180,10 +138,6 @@ open class AssistantService : Service() {
             Thread {
                 val ttt = googlestt.getSTTText(fileName.path)
                 Log.d("ddd googlestt", ttt)
-//                runOnUiThread {
-//                    txtSent.text ="Sent: $ttt"
-//                    txtReceived.text = "Received: Not received yet..."
-//                }
                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                     putExtra("isReceived", false)
                     putExtra("data", ttt)
@@ -205,10 +159,6 @@ open class AssistantService : Service() {
 //                            if (prevRecAudio.isNotEmpty()){
 //                                val ff = File(prevRecAudio)
 //                                ff.delete()
-//                            }
-//                            runOnUiThread {
-//                                txtSent.text ="Sent: $ttt"
-//                                txtReceived.text = "Received: $responseFromNaverClova"
 //                            }
                             sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                 putExtra("isReceived", true)
@@ -291,7 +241,6 @@ open class AssistantService : Service() {
                             }
                         }
                     }
-
                 }.start()
             }.start()
 
@@ -302,10 +251,7 @@ open class AssistantService : Service() {
 
     private fun playAudio() {
         if (playingAvailable) {
-            Log.d("rrrr playingAvailable", playingAvailable.toString())
-            Log.d("rrrr audioFilePath", audioFilePath)
             if (audioFilePath.isNotEmpty()) {
-                Log.d("rrrr audioFilePath", audioFilePath)
                 val assetManager = this.assets
                 val firstFileDescriptor = assetManager.openFd("silenceShort.mp3")
                 if (!isMediaPlayerInitialized) {
@@ -354,30 +300,20 @@ open class AssistantService : Service() {
         recorder.stop()
         isRecordingAvailable = true
     }
-
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID_FOREGROUND_SERVICE, prepareNotification())
         val action = intent.action
         Log.d("action in foreground: ", "$action")
         if (action == START_ACTION) {
-//            startRecording()
-            playNotification()
-            Handler().postDelayed({
-                startVoiceCommand()
-            }, 1000)
+            startVoiceCommand()
         } else if (action == STOP_ACTION) {
             stopRecording()
         } else if (action == START_VOICE_COMMAND_ACTION) {
-            playNotification()
-            Handler().postDelayed({
-                startVoiceCommand()
-            }, 1000)
-
+            startVoiceCommand()
         }
         return START_NOT_STICKY
     }
-
-    private fun playNotification(){
+    private fun playRecordStartedNotification(){
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
             mediaPlayer.reset()
@@ -388,15 +324,13 @@ open class AssistantService : Service() {
             mediaPlayerSilence.reset()
             isMediaPlayerSilenceInitialized = false
         }
-
-
         soundPool = SoundPool.Builder()
             .setMaxStreams(1)
             .build()
 
         soundPool.setOnLoadCompleteListener { soundPool, sampleId, status ->
             if (status == 0) {
-                soundPool.play(sampleId, 1f, 1f, 1, 0, 1f)
+                soundPool.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
             }
         }
         try {
@@ -405,71 +339,64 @@ open class AssistantService : Service() {
         } catch (e: IOException) {
             e.printStackTrace()
         }
-
-//        if (!isMediaPlayerBeginningAlertInitialized){
-//            mediaPlayerBeginningAlert = MediaPlayer()
-//        }
-//
-//        mediaPlayerBeginningAlert.apply {
-//            setVolume(1f, 1f)
-//            setDataSource(assetFileDescriptor.createInputStream().fd)
-//            prepare()
-//                }
-//        mediaPlayerBeginningAlert.setOnCompletionListener{startVoiceCommand()}
-////        mediaPlayerBeginningAlert.setDataSource(assetFileDescriptor.fileDescriptor,
-////            assetFileDescriptor.startOffset,
-////            assetFileDescriptor.length)
-////        mediaPlayerBeginningAlert.p
-//        mediaPlayerBeginningAlert.start()
-//        mediaPlayerBeginningAlert.setOnCompletionListener { mp -> mp.release() }
-
-
-
     }
 
+    private fun playRecordEndNotification(){
+        if (!isRecordingAvailable) {
+            stopRecording()
+            isRecorderAvailable = true
+            playingAvailable = true
+        }
+        soundPoolEndNotification = SoundPool.Builder()
+            .setMaxStreams(1)
+            .build()
 
-    fun startVoiceCommand() {
-//        if (mediaPlayer.isPlaying) {
-//            mediaPlayer.stop()
-//            mediaPlayer.reset()
-//            isMediaPlayerInitialized = false
-//        }
-//        if (mediaPlayerSilence.isPlaying) {
-//            mediaPlayerSilence.stop()
-//            mediaPlayerSilence.reset()
-//            isMediaPlayerSilenceInitialized = false
-//        }
-        Log.d("mediaPlayerr", "is Mediaplayer active: ${mediaPlayerBeginningAlert.isPlaying}")
+        soundPoolEndNotification.setOnLoadCompleteListener { soundPooll, sampleId, status ->
+            if (status == 0) {
+                soundPooll.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
+            }
+        }
         try {
-//            val assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
-//            time.setToNow()
-//            Log.d("timeMeasure", "Time before media player: ${System.currentTimeMillis()}")
-//            mediaPlayer = MediaPlayer().apply {
-//                setVolume(1f, 1f)
-//                setDataSource(
-//                    assetFileDescriptor.fileDescriptor,
-//                    assetFileDescriptor.startOffset,
-//                    assetFileDescriptor.length
-//                )
-////                setOnCompletionListener {
-////                    time.setToNow()
-////                    Log.d("timeMeasure", "Time before startRecording(): ${System.currentTimeMillis()}")
-////                }
-//                prepare()
-//                start()
-//
-//            }
-//            soundPool.play(soundId, 1f, 1f, 0, 0,1f)
-//            soundPool.setOnLoadCompleteListener { _, _, _ ->
-//                soundPool.play(soundId, 1f, 1f, 1, 0, 1f)
-//            }
-            Log.d("soundpool", soundId.toString())
-//            time.setToNow()
-//            Log.d("timeMeasure", "Time before startRecording(): ${System.currentTimeMillis()}")
-            startRecording()
-//            Handler().postDelayed({
-//                startRecording()
-//            }, 1000)
+            val assetFileEndNotification = assets.openFd(END_ALERT)
+            val soundIdEndNotification = soundPoolEndNotification.load(assetFileEndNotification, 1)
+        } catch (e: IOException){
+            e.printStackTrace()
+        }
+    }
+    private fun stopRecordingAndPlayNotification(){
+        stopRecording()
+        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+            putExtra("isRecording", false)
+        })
+        isRecordingAvailable = true
+        playingAvailable = true
+        playRecordEndNotification()
+        try {
+            Handler().postDelayed({
+                assistantDemoHelper()
+            }, 1500)
+
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+    fun startVoiceCommand() {
+        if (mediaPlayer.isPlaying) {
+            mediaPlayer.stop()
+            mediaPlayer.reset()
+            isMediaPlayerInitialized = false
+        }
+        if (mediaPlayerSilence.isPlaying) {
+            mediaPlayerSilence.stop()
+            mediaPlayerSilence.reset()
+            isMediaPlayerSilenceInitialized = false
+        }
+        playRecordStartedNotification()
+        try {
+            Handler().postDelayed({
+                startRecording()
+            }, 1800)
+
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -494,7 +421,6 @@ open class AssistantService : Service() {
             "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty,
             "chatWindowSize" to chatWindowSize, "tokensCheckBox" to tokensInfo
         )
-
         return gpt3Settings
     }
 
@@ -513,8 +439,6 @@ open class AssistantService : Service() {
         gpt3SettingsPreferences.putString("chatWindowSize", "5")
         gpt3SettingsPreferences.putString("tokensCheckBox", "false")
         gpt3SettingsPreferences.apply()
-
-
     }
 
     private fun prepareNotification(): Notification {
@@ -578,7 +502,6 @@ open class AssistantService : Service() {
             isMediaPlayerSilenceInitialized = false
         }
     }
-
     companion object {
         const val NOTIFICATION_ID_FOREGROUND_SERVICE = 8466503
         const val START_ACTION = "START_ACTION"
