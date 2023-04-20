@@ -75,12 +75,21 @@ open class AssistantService : Service() {
             initGPT3Settings()
         }
 
+        val filterBluetoothConnection = IntentFilter().apply {
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
+        }
+        registerReceiver(bluetoothDisconnectReceiver, filterBluetoothConnection)
+
         isNeverClova = !mPreferences.getString("language_model", "gpt-3").equals("gpt-3")
         messageStorage = MessageStorage(this)
         setupBluetoothHeadset()
         val filter = IntentFilter(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
         registerReceiver(AudioStateReceiver(), filter)
     }
+
+
+
 
     fun setupBluetoothHeadset() {
         bluetoothAdapter?.getProfileProxy(this, profileListener, BluetoothProfile.HEADSET)
@@ -98,9 +107,24 @@ open class AssistantService : Service() {
         override fun onServiceDisconnected(profile: Int) {
             if (profile == BluetoothProfile.HEADSET) {
                 bluetoothHeadset = null
+                deviceBluetooth = null
             }
         }
     }
+
+    private val bluetoothDisconnectReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val action = intent.action
+            if (BluetoothDevice.ACTION_ACL_DISCONNECTED == action || BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED == action) {
+                Log.d(TAG, "Device is disconnected")
+                val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                if (device != null && deviceBluetooth != null && device.address == deviceBluetooth?.address) {
+                    handleDisconnection()
+                }
+            }
+        }
+    }
+
 
     inner class AudioStateReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -122,6 +146,191 @@ open class AssistantService : Service() {
                     }
                 }
             }
+        }
+    }
+
+    private fun handleDisconnection() {
+        // Close the BluetoothHeadset proxy
+        stopPlayer()
+        closeBluetoothConnection()
+        Toast.makeText(this, "Bluetooth headset connection lost", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun closeBluetoothConnection() {
+        if (bluetoothHeadset != null) {
+            bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset)
+            bluetoothHeadset = null
+        }
+        deviceBluetooth = null
+    }
+
+
+
+
+
+    private fun playAudio() {
+        if (playingAvailable) {
+            if (audioFilePath.isNotEmpty()) {
+                val assetManager = this.assets
+                val firstFileDescriptor = assetManager.openFd("silenceShort.mp3")
+                if (!isMediaPlayerInitialized) {
+                    mediaPlayer = MediaPlayer()
+                }
+                if (!isMediaPlayerSilenceInitialized) {
+                    mediaPlayerSilence = MediaPlayer()
+                }
+                mediaPlayer.reset()
+                mediaPlayer.setDataSource(
+                    firstFileDescriptor.fileDescriptor,
+                    firstFileDescriptor.startOffset,
+                    firstFileDescriptor.length
+                )
+                mediaPlayer.prepare()
+                mediaPlayer.setOnCompletionListener {
+                    mediaPlayerSilence.reset()
+                    mediaPlayerSilence.setDataSource(audioFilePath)
+                    mediaPlayerSilence.prepare()
+                    mediaPlayerSilence.start()
+                }
+                mediaPlayer.start()
+                playingAvailable = false
+
+            }
+            //            if (prevSentAudio?.path?.isNotEmpty() == true){
+            //                prevSentAudio?.delete()
+            //            }
+
+        } else {
+            Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun stopPlayer() {
+        if (mediaPlayer.isPlaying){
+            mediaPlayer.stop()
+            mediaPlayer.reset()
+            isMediaPlayerInitialized = false
+        }
+        if (mediaPlayerSilence.isPlaying){
+            mediaPlayerSilence.stop()
+            mediaPlayerSilence.reset()
+            isMediaPlayerSilenceInitialized = false
+        }
+    }
+
+    private fun startRecording() {
+        bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
+        time.setToNow()
+        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+        outputFile = File(pathToRecords, audioName)
+        recorder.start(outputFile)
+        isRecordingAvailable = false
+    }
+
+    private fun stopRecording() {
+        bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
+        recorder.stop()
+        isRecordingAvailable = true
+    }
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        startForeground(NOTIFICATION_ID_FOREGROUND_SERVICE, prepareNotification())
+        val action = intent.action
+        Log.d("action in foreground: ", "$action")
+        if (action == START_ACTION) {
+            startVoiceCommand()
+        } else if (action == STOP_ACTION) {
+            stopRecording()
+        } else if (action == START_VOICE_COMMAND_ACTION) {
+            startVoiceCommand()
+        }
+        return START_NOT_STICKY
+    }
+    private fun playRecordStartedNotification(){
+        if (mediaPlayer.isPlaying) {
+            mediaPlayer.stop()
+            mediaPlayer.reset()
+            isMediaPlayerInitialized = false
+        }
+        if (mediaPlayerSilence.isPlaying) {
+            mediaPlayerSilence.stop()
+            mediaPlayerSilence.reset()
+            isMediaPlayerSilenceInitialized = false
+        }
+        soundPool = SoundPool.Builder()
+            .setMaxStreams(1)
+            .build()
+
+        soundPool.setOnLoadCompleteListener { soundPool, sampleId, status ->
+            if (status == 0) {
+                soundPool.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
+            }
+        }
+        try {
+            val assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
+            soundId = soundPool.load(assetFileDescriptor, 1)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun playRecordEndNotification(){
+        if (!isRecordingAvailable) {
+            stopRecording()
+            isRecorderAvailable = true
+            playingAvailable = true
+        }
+        soundPoolEndNotification = SoundPool.Builder()
+            .setMaxStreams(1)
+            .build()
+
+        soundPoolEndNotification.setOnLoadCompleteListener { soundPooll, sampleId, status ->
+            if (status == 0) {
+                soundPooll.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
+            }
+        }
+        try {
+            val assetFileEndNotification = assets.openFd(END_ALERT)
+            val soundIdEndNotification = soundPoolEndNotification.load(assetFileEndNotification, 1)
+        } catch (e: IOException){
+            e.printStackTrace()
+        }
+    }
+    private fun stopRecordingAndPlayNotification(){
+        stopRecording()
+        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+            putExtra("isRecording", false)
+        })
+        isRecordingAvailable = true
+        playingAvailable = true
+        playRecordEndNotification()
+        try {
+            Handler().postDelayed({
+                assistantDemoHelper()
+            }, 1500)
+
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+    fun startVoiceCommand() {
+        if (mediaPlayer.isPlaying) {
+            mediaPlayer.stop()
+            mediaPlayer.reset()
+            isMediaPlayerInitialized = false
+        }
+        if (mediaPlayerSilence.isPlaying) {
+            mediaPlayerSilence.stop()
+            mediaPlayerSilence.reset()
+            isMediaPlayerSilenceInitialized = false
+        }
+        playRecordStartedNotification()
+        try {
+            Handler().postDelayed({
+                startRecording()
+            }, 1800)
+
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 
@@ -249,198 +458,6 @@ open class AssistantService : Service() {
         }
     }
 
-    private fun playAudio() {
-        if (playingAvailable) {
-            if (audioFilePath.isNotEmpty()) {
-                val assetManager = this.assets
-                val firstFileDescriptor = assetManager.openFd("silenceShort.mp3")
-                if (!isMediaPlayerInitialized) {
-                    mediaPlayer = MediaPlayer()
-                }
-                if (!isMediaPlayerSilenceInitialized) {
-                    mediaPlayerSilence = MediaPlayer()
-                }
-                mediaPlayer.reset()
-                mediaPlayer.setDataSource(
-                    firstFileDescriptor.fileDescriptor,
-                    firstFileDescriptor.startOffset,
-                    firstFileDescriptor.length
-                )
-                mediaPlayer.prepare()
-                mediaPlayer.setOnCompletionListener {
-                    mediaPlayerSilence.reset()
-                    mediaPlayerSilence.setDataSource(audioFilePath)
-                    mediaPlayerSilence.prepare()
-                    mediaPlayerSilence.start()
-                }
-                mediaPlayer.start()
-                playingAvailable = false
-
-            }
-            //            if (prevSentAudio?.path?.isNotEmpty() == true){
-            //                prevSentAudio?.delete()
-            //            }
-
-        } else {
-            Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun startRecording() {
-        bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
-        time.setToNow()
-        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-        outputFile = File(pathToRecords, audioName)
-        recorder.start(outputFile)
-        isRecordingAvailable = false
-    }
-
-    private fun stopRecording() {
-        bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
-        recorder.stop()
-        isRecordingAvailable = true
-    }
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID_FOREGROUND_SERVICE, prepareNotification())
-        val action = intent.action
-        Log.d("action in foreground: ", "$action")
-        if (action == START_ACTION) {
-            startVoiceCommand()
-        } else if (action == STOP_ACTION) {
-            stopRecording()
-        } else if (action == START_VOICE_COMMAND_ACTION) {
-            startVoiceCommand()
-        }
-        return START_NOT_STICKY
-    }
-    private fun playRecordStartedNotification(){
-        if (mediaPlayer.isPlaying) {
-            mediaPlayer.stop()
-            mediaPlayer.reset()
-            isMediaPlayerInitialized = false
-        }
-        if (mediaPlayerSilence.isPlaying) {
-            mediaPlayerSilence.stop()
-            mediaPlayerSilence.reset()
-            isMediaPlayerSilenceInitialized = false
-        }
-        soundPool = SoundPool.Builder()
-            .setMaxStreams(1)
-            .build()
-
-        soundPool.setOnLoadCompleteListener { soundPool, sampleId, status ->
-            if (status == 0) {
-                soundPool.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
-            }
-        }
-        try {
-            val assetFileDescriptor = assets.openFd(BEGINNING_ALERT)
-            soundId = soundPool.load(assetFileDescriptor, 1)
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun playRecordEndNotification(){
-        if (!isRecordingAvailable) {
-            stopRecording()
-            isRecorderAvailable = true
-            playingAvailable = true
-        }
-        soundPoolEndNotification = SoundPool.Builder()
-            .setMaxStreams(1)
-            .build()
-
-        soundPoolEndNotification.setOnLoadCompleteListener { soundPooll, sampleId, status ->
-            if (status == 0) {
-                soundPooll.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
-            }
-        }
-        try {
-            val assetFileEndNotification = assets.openFd(END_ALERT)
-            val soundIdEndNotification = soundPoolEndNotification.load(assetFileEndNotification, 1)
-        } catch (e: IOException){
-            e.printStackTrace()
-        }
-    }
-    private fun stopRecordingAndPlayNotification(){
-        stopRecording()
-        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-            putExtra("isRecording", false)
-        })
-        isRecordingAvailable = true
-        playingAvailable = true
-        playRecordEndNotification()
-        try {
-            Handler().postDelayed({
-                assistantDemoHelper()
-            }, 1500)
-
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-    fun startVoiceCommand() {
-        if (mediaPlayer.isPlaying) {
-            mediaPlayer.stop()
-            mediaPlayer.reset()
-            isMediaPlayerInitialized = false
-        }
-        if (mediaPlayerSilence.isPlaying) {
-            mediaPlayerSilence.stop()
-            mediaPlayerSilence.reset()
-            isMediaPlayerSilenceInitialized = false
-        }
-        playRecordStartedNotification()
-        try {
-            Handler().postDelayed({
-                startRecording()
-            }, 1800)
-
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun getGPT3Settings(): Map<String, String?> {
-        val model = mPreferences.getString("model", "gpt-3.5-turbo")
-        val max_tokens = mPreferences.getString("max_tokens", "200")
-        val temperature = mPreferences.getString("temperature", "1")
-        val top_p = mPreferences.getString("top_p", "1")
-        val n = mPreferences.getString("n", "1")
-        val stream = mPreferences.getString("stream", "false")
-        val logprobs = mPreferences.getString("logprobs", "null")
-        val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
-        val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
-        val chatWindowSize = mPreferences.getString("chatWindowSize", "5")
-        val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
-
-        val gpt3Settings = mapOf(
-            "model" to model, "max_tokens" to max_tokens, "temperature" to temperature,
-            "top_p" to top_p, "n" to n, "stream" to stream, "logprobs" to logprobs,
-            "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty,
-            "chatWindowSize" to chatWindowSize, "tokensCheckBox" to tokensInfo
-        )
-        return gpt3Settings
-    }
-
-    private fun initGPT3Settings(){
-        val gpt3SettingsPreferences = mPreferences.edit()
-        gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
-        gpt3SettingsPreferences.putString("max_tokens", "200")
-        gpt3SettingsPreferences.putString("temperature", "1")
-        gpt3SettingsPreferences.putString("top_p", "1")
-        gpt3SettingsPreferences.putString("n", "1")
-        gpt3SettingsPreferences.putString("stream", "false")
-        gpt3SettingsPreferences.putString("logprobs", "null")
-        gpt3SettingsPreferences.putString("frequency_penalty", "0")
-        gpt3SettingsPreferences.putString("presence_penalty", "0.6")
-        gpt3SettingsPreferences.putString("language_model", "gpt-3")
-        gpt3SettingsPreferences.putString("chatWindowSize", "5")
-        gpt3SettingsPreferences.putString("tokensCheckBox", "false")
-        gpt3SettingsPreferences.apply()
-    }
-
     private fun prepareNotification(): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             mNotificationManager.getNotificationChannel(FOREGROUND_CHANNEL_ID) == null
@@ -484,23 +501,50 @@ open class AssistantService : Service() {
     }
 
     override fun onDestroy() {
+        super.onDestroy()
         unregisterReceiver(AudioStateReceiver())
         soundPool.release()
         bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset)
-        super.onDestroy()
+        unregisterReceiver(bluetoothDisconnectReceiver)
+
+    }
+    private fun getGPT3Settings(): Map<String, String?> {
+        val model = mPreferences.getString("model", "gpt-3.5-turbo")
+        val max_tokens = mPreferences.getString("max_tokens", "200")
+        val temperature = mPreferences.getString("temperature", "1")
+        val top_p = mPreferences.getString("top_p", "1")
+        val n = mPreferences.getString("n", "1")
+        val stream = mPreferences.getString("stream", "false")
+        val logprobs = mPreferences.getString("logprobs", "null")
+        val frequency_penalty = mPreferences.getString("frequency_penalty", "0")
+        val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
+        val chatWindowSize = mPreferences.getString("chatWindowSize", "5")
+        val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
+
+        val gpt3Settings = mapOf(
+            "model" to model, "max_tokens" to max_tokens, "temperature" to temperature,
+            "top_p" to top_p, "n" to n, "stream" to stream, "logprobs" to logprobs,
+            "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty,
+            "chatWindowSize" to chatWindowSize, "tokensCheckBox" to tokensInfo
+        )
+        return gpt3Settings
     }
 
-    fun stopPlayer() {
-        if (mediaPlayer.isPlaying){
-            mediaPlayer.stop()
-            mediaPlayer.reset()
-            isMediaPlayerInitialized = false
-        }
-        if (mediaPlayerSilence.isPlaying){
-            mediaPlayerSilence.stop()
-            mediaPlayerSilence.reset()
-            isMediaPlayerSilenceInitialized = false
-        }
+    private fun initGPT3Settings(){
+        val gpt3SettingsPreferences = mPreferences.edit()
+        gpt3SettingsPreferences.putString("model", "gpt-3.5-turbo")
+        gpt3SettingsPreferences.putString("max_tokens", "200")
+        gpt3SettingsPreferences.putString("temperature", "1")
+        gpt3SettingsPreferences.putString("top_p", "1")
+        gpt3SettingsPreferences.putString("n", "1")
+        gpt3SettingsPreferences.putString("stream", "false")
+        gpt3SettingsPreferences.putString("logprobs", "null")
+        gpt3SettingsPreferences.putString("frequency_penalty", "0")
+        gpt3SettingsPreferences.putString("presence_penalty", "0.6")
+        gpt3SettingsPreferences.putString("language_model", "gpt-3")
+        gpt3SettingsPreferences.putString("chatWindowSize", "5")
+        gpt3SettingsPreferences.putString("tokensCheckBox", "false")
+        gpt3SettingsPreferences.apply()
     }
     companion object {
         const val NOTIFICATION_ID_FOREGROUND_SERVICE = 8466503
