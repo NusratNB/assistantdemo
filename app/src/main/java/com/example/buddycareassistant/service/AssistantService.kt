@@ -117,9 +117,10 @@ open class AssistantService : Service() {
             val action = intent.action
             if (BluetoothDevice.ACTION_ACL_DISCONNECTED == action || BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED == action) {
                 Log.d(TAG, "Device is disconnected")
+                handleDisconnection()
                 val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
                 if (device != null && deviceBluetooth != null && device.address == deviceBluetooth?.address) {
-                    handleDisconnection()
+//                    handleDisconnection()
                 }
             }
         }
