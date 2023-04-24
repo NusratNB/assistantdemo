@@ -55,6 +55,8 @@ open class AssistantService : Service() {
     private val END_ALERT = "alerts/End.mp3"
     private lateinit var soundPool: SoundPool
     private lateinit var soundPoolEndNotification: SoundPool
+    private lateinit var prevSentAudio: File
+    private var prevRecAudio = ""
     private var soundId = 0
     var isNeverClova: Boolean = false
 
@@ -165,10 +167,6 @@ open class AssistantService : Service() {
         deviceBluetooth = null
     }
 
-
-
-
-
     private fun playAudio() {
         if (playingAvailable) {
             if (audioFilePath.isNotEmpty()) {
@@ -197,9 +195,10 @@ open class AssistantService : Service() {
                 playingAvailable = false
 
             }
-            //            if (prevSentAudio?.path?.isNotEmpty() == true){
-            //                prevSentAudio?.delete()
-            //            }
+            if (prevSentAudio.path.isNotEmpty() == true){
+                prevSentAudio.delete()
+            }
+            prevRecAudio = audioFilePath.toString()
 
         } else {
             Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
@@ -362,14 +361,14 @@ open class AssistantService : Service() {
                             audioFilePath =
                                 pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S")
                                     .toString() + ".mp3"
-//                            prevSentAudio = fileName
+                            prevSentAudio = fileName
                             Log.d("pathToSavingAudio", pathToSavingAudio.toString())
                             Log.d("audioFilePath", audioFilePath)
                             googlestt.googletts(audioFilePath, responseFromNaverClova)
-//                            if (prevRecAudio.isNotEmpty()){
-//                                val ff = File(prevRecAudio)
-//                                ff.delete()
-//                            }
+                            if (prevRecAudio.toString().isNotEmpty()){
+                                val ff = File(prevRecAudio)
+                                ff.delete()
+                            }
                             sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                 putExtra("isReceived", true)
                                 putExtra("isNeverClova", true)
@@ -392,17 +391,17 @@ open class AssistantService : Service() {
                             audioFilePath =
                                 pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S")
                                     .toString() + ".mp3"
-//                            prevSentAudio = fileName
+                            prevSentAudio = fileName
                             Log.d("pathToSavingAudio", pathToSavingAudio.toString())
                             Log.d("audioFilePath", audioFilePath)
 
                             googlestt.googletts(audioFilePath, engToKor)
                             Log.d("ddd googletts", audioFilePath)
 
-//                            if (prevRecAudio.isNotEmpty()){
-//                                val ff = File(prevRecAudio)
-//                                ff.delete()
-//                            }
+                            if (prevRecAudio.isNotEmpty()){
+                                val ff = File(prevRecAudio)
+                                ff.delete()
+                            }
                             sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                 putExtra("isReceived", true)
                                 putExtra("isNeverClova", false)
@@ -430,17 +429,17 @@ open class AssistantService : Service() {
                                 audioFilePath =
                                     "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
                                         .toString() + ".mp3"
-//                            prevSentAudio = fileName
+                                prevSentAudio = fileName
                                 Log.d("pathToSavingAudio", pathToSavingAudio.toString())
                                 Log.d("audioFilePath", audioFilePath)
 
                                 googlestt.googletts(audioFilePath, engToKor)
                                 Log.d("ddd googletts", audioFilePath)
 
-//                            if (prevRecAudio.isNotEmpty()){
-//                                val ff = File(prevRecAudio)
-//                                ff.delete()
-//                            }
+                                if (prevRecAudio.isNotEmpty()){
+                                    val ff = File(prevRecAudio)
+                                    ff.delete()
+                                }
                                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                     putExtra("isReceived", true)
                                     putExtra("isNeverClova", false)
