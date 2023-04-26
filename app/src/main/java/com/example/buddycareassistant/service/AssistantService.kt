@@ -22,7 +22,9 @@ import com.example.buddycareassistant.MainActivity
 import com.example.buddycareassistant.R
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.recordaudio.AudioRecorder
+import com.example.buddycareassistant.recordaudio.VoiceRecorder
 import com.example.buddycareassistant.storemessages.MessageStorage
+import com.konovalov.vad.VadConfig
 import java.io.File
 import java.io.IOException
 
@@ -59,6 +61,13 @@ open class AssistantService : Service() {
     private var prevRecAudio = ""
     private var soundId = 0
     var isNeverClova: Boolean = false
+    private val DEFAULT_SAMPLE_RATE = VadConfig.SampleRate.SAMPLE_RATE_16K
+    private val DEFAULT_FRAME_SIZE = VadConfig.FrameSize.FRAME_SIZE_160
+    private val DEFAULT_MODE = VadConfig.Mode.VERY_AGGRESSIVE
+    private val DEFAULT_SILENCE_DURATION = 500
+    private val DEFAULT_VOICE_DURATION = 500
+    private var config: VadConfig? = null
+    private lateinit var voiceRecorder: VoiceRecorder
 
     override fun onCreate() {
         super.onCreate()
@@ -89,10 +98,18 @@ open class AssistantService : Service() {
         setupBluetoothHeadset()
         val filter = IntentFilter(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
         registerReceiver(AudioStateReceiver(), filter)
+
+        config = VadConfig.newBuilder()
+            .setSampleRate(DEFAULT_SAMPLE_RATE)
+            .setFrameSize(DEFAULT_FRAME_SIZE)
+            .setMode(DEFAULT_MODE)
+            .setSilenceDurationMillis(DEFAULT_SILENCE_DURATION)
+            .setVoiceDurationMillis(DEFAULT_VOICE_DURATION)
+            .build()
+
+        voiceRecorder = VoiceRecorder(this, config)
+
     }
-
-
-
 
     fun setupBluetoothHeadset() {
         bluetoothAdapter?.getProfileProxy(this, profileListener, BluetoothProfile.HEADSET)

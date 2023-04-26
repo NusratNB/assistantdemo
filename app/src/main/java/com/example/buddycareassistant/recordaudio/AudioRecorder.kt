@@ -29,25 +29,7 @@ class AudioRecorder(private val ctx: Context) {
         private var isRecording = false
     private var recorder = MediaRecorder()
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun startRecording(outputFile: File) {
-        Log.d("audioPermission", "Status: ${ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)}")
-        if (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { // get permission
-            recorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT)
-            recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-            recorder.setOutputFile(outputFile)
-            recorder.prepare()
-            recorder.start()
-        }else{
-            Toast.makeText(ctx, "Recording is failed", Toast.LENGTH_SHORT).show()
-        }
 
-    }
-    fun stopRecording() {
-        recorder.stop()
-        recorder.release()
-    }
 
     fun start(outputFile: File) {
         ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)

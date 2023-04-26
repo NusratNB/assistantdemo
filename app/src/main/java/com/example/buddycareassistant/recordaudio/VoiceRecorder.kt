@@ -127,7 +127,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 return null
             }
             ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
-            val audioRecordForSaving = AudioRecord(MediaRecorder.AudioSource.MIC,
+            val audioRecordForSaving = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 vad!!.config.sampleRate.value,
                 PCM_CHANNEL,
                 PCM_ENCODING_BIT,
@@ -139,7 +139,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 audioRecordForSaving.release()
             }
         }catch (e: IllegalArgumentException){
-            Log.e(TAG, "Error can't create AudioRecord for saving Audio file", e)
+            Log.e(TAG, "Error can't create AudioRecord for saving Audio file: ", e)
         }
         return null
     }
@@ -176,7 +176,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
 //                        Log.d("audioVolumeTest", "Recording stopped")
 //                        Log.d("audioVolumeTest", "Difference: " + (noiseTime - speechTime).toString())
 //                    }
-                    Log.d(TAG, "VAD: Noise detected ")
+                    Log.d(TAG, "VAD: Noise detected")
                 }
             })
         }

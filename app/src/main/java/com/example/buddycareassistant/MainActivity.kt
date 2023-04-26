@@ -118,15 +118,15 @@ class MainActivity : AppCompatActivity() {
 //        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
 //        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::PartialWakeLock")
 
-        config = VadConfig.newBuilder()
-            .setSampleRate(DEFAULT_SAMPLE_RATE)
-            .setFrameSize(DEFAULT_FRAME_SIZE)
-            .setMode(DEFAULT_MODE)
-            .setSilenceDurationMillis(DEFAULT_SILENCE_DURATION)
-            .setVoiceDurationMillis(DEFAULT_VOICE_DURATION)
-            .build()
-
-        voiceRecorder = VoiceRecorder(this, config)
+//        config = VadConfig.newBuilder()
+//            .setSampleRate(DEFAULT_SAMPLE_RATE)
+//            .setFrameSize(DEFAULT_FRAME_SIZE)
+//            .setMode(DEFAULT_MODE)
+//            .setSilenceDurationMillis(DEFAULT_SILENCE_DURATION)
+//            .setVoiceDurationMillis(DEFAULT_VOICE_DURATION)
+//            .build()
+//
+//        voiceRecorder = VoiceRecorder(this, config)
 
         messageStorage = MessageStorage(this)
         btnNewChatRoom = findViewById(R.id.btnNewChatRoom)

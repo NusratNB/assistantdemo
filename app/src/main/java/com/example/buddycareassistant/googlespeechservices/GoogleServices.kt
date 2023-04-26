@@ -85,7 +85,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 transcription += "${alternative.transcript} "
             }
         }
-        Log.d("Google STT result: ", transcription)
+        Log.d(TAG, "Google STT result: $transcription")
         speechClient.close()
         speechClient.close()
         return transcription
@@ -279,7 +279,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                     val json = JSONObject(responseBody!!.readUtf8())
 
                     val result = json.get("choices")
-                    Log.d("GPT3 result", result.toString())
+                    Log.d(TAG, "GPT3 result: $result")
                     val resultJson = JSONArray(result.toString())
                     val text = JSONObject(resultJson.get(0).toString())
                     val resText = text["message"]
@@ -293,9 +293,9 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                     messagesArray.put(assistantResponse)
                     messageStorage.saveGptPrompt(promptJson.toString())
 
-                    Log.d("GPT3", content.toString())
+                    Log.d(TAG, "GPT3 content: $content")
                 } catch (e: Exception) {
-                    Log.d("GPT3 Error ",e.stackTraceToString() )
+                    Log.d(TAG, "GPT3 Error: " + e.stackTraceToString() )
                 }
                 callback(responseGPT3)
 
@@ -326,7 +326,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
             "includeProbs": false
                 }
         """
-        Log.d("completionRequest", completionRequest)
+        Log.d(TAG, "Naver Clova completionRequest: $completionRequest")
 
         val url = "https://$host/testapp/v1/tasks/n2av10my/completions/LK-B"
 
@@ -345,7 +345,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                println("Request failed: $e")
+                Log.e(TAG, "Request failed: $e")
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -353,7 +353,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 val responseMessage = response.message
                 val responseBody = response.body?.source()
                 if (responseCode != 200 || responseBody == null) {
-                    Log.e("Error: ", "$responseCode $responseMessage: $responseBody")
+                    Log.e(TAG, "Error: $responseCode $responseMessage: $responseBody")
 
                 }
                 try {
