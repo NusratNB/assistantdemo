@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothProfile
 import android.content.*
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.SoundPool
 import android.os.Binder
@@ -33,6 +34,7 @@ open class AssistantService : Service() {
     private lateinit var mNotificationBuilder: NotificationCompat.Builder
     private lateinit var mPreferences: SharedPreferences
     private lateinit var recorder: AudioRecorder
+    private lateinit var audioManager: AudioManager
     private val time = Time()
     lateinit var outputFile: File
     lateinit var pathToSavingAudio: File
@@ -81,6 +83,7 @@ open class AssistantService : Service() {
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
         }
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         registerReceiver(bluetoothDisconnectReceiver, filterBluetoothConnection)
 
         isNeverClova = !mPreferences.getString("language_model", "gpt-3").equals("gpt-3")
@@ -102,7 +105,12 @@ open class AssistantService : Service() {
             if (profile == BluetoothProfile.HEADSET) {
                 bluetoothHeadset = proxy as BluetoothHeadset
                 val connectedDevices = bluetoothHeadset?.connectedDevices
-                deviceBluetooth = connectedDevices!![0]
+                for (conDevice in connectedDevices!!){
+                    if (conDevice.address.slice(0..7) == "78:02:B7"){
+                        deviceBluetooth = connectedDevices[0]
+                        Log.i(TAG, "Connected bluetooth device information. MAC: ${deviceBluetooth!!.address}, NAME: ${deviceBluetooth!!.name}")
+                    }
+                }
             }
         }
 
@@ -152,11 +160,27 @@ open class AssistantService : Service() {
         }
     }
 
+//    private fun enableAudioManagerSCO(){
+//        audioManager.startBluetoothSco()
+//        audioManager.isSpeakerphoneOn = false
+//        audioManager.isBluetoothScoOn = true
+//
+//    }
+//
+//    private fun disableAudioManagerSCO(){
+//        audioManager.stopBluetoothSco()
+//        audioManager.isSpeakerphoneOn = true
+//        audioManager.isBluetoothScoOn = false
+//
+//    }
+
     private fun handleDisconnection() {
         // Close the BluetoothHeadset proxy
         stopPlayer()
         closeBluetoothConnection()
         Toast.makeText(this, "Bluetooth headset connection lost", Toast.LENGTH_SHORT).show()
+        Log.i(TAG, "handelDisconnection: Bluetooth headset connection lost")
+        Log.i(TAG, "handelDisconnection: Due to Bluetooth headset disconnection, the recorder is stopped!")
     }
 
     private fun closeBluetoothConnection() {
@@ -216,13 +240,17 @@ open class AssistantService : Service() {
             mediaPlayerSilence.reset()
             isMediaPlayerSilenceInitialized = false
         }
+//        disableAudioManagerSCO()
     }
+
+
 
     private fun startRecording() {
         bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
         time.setToNow()
         val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
         outputFile = File(pathToRecords, audioName)
+//        disableAudioManagerSCO()
         recorder.start(outputFile)
         isRecordingAvailable = false
     }
@@ -256,6 +284,7 @@ open class AssistantService : Service() {
             mediaPlayerSilence.reset()
             isMediaPlayerSilenceInitialized = false
         }
+//        enableAudioManagerSCO()
         soundPool = SoundPool.Builder()
             .setMaxStreams(1)
             .build()
@@ -279,6 +308,7 @@ open class AssistantService : Service() {
             isRecorderAvailable = true
             playingAvailable = true
         }
+//        enableAudioManagerSCO()
         soundPoolEndNotification = SoundPool.Builder()
             .setMaxStreams(1)
             .build()
@@ -296,6 +326,7 @@ open class AssistantService : Service() {
         }
     }
     private fun stopRecordingAndPlayNotification(){
+
         stopRecording()
         sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
             putExtra("isRecording", false)

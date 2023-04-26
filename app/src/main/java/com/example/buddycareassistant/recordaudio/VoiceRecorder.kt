@@ -74,7 +74,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             try {
                 audioRecord!!.release()
             } catch (e: Exception) {
-                Log.e(TAG, "Error stop AudioRecord ", e)
+                Log.e(TAG, "Error stop AudioRecord: ", e)
             }
             audioRecord = null
         }

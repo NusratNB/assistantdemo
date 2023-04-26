@@ -88,6 +88,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         }
         Log.d("Google STT result: ", transcription)
         speechClient.close()
+        speechClient.close()
         return transcription
     }
 
