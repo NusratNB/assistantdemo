@@ -122,7 +122,7 @@ open class AssistantService : Service() {
                 val connectedDevices = bluetoothHeadset?.connectedDevices
                 for (conDevice in connectedDevices!!){
                     if (conDevice.address.slice(0..7) == "78:02:B7"){
-                        deviceBluetooth = connectedDevices[0]
+                        deviceBluetooth = conDevice
                         Log.i(TAG, "Connected bluetooth device information. MAC: ${deviceBluetooth!!.address}, NAME: ${deviceBluetooth!!.name}")
                     }
                 }
