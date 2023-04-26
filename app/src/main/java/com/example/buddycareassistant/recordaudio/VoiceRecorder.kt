@@ -151,8 +151,8 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             while (!Thread.interrupted() && isListening && audioRecord != null) {
                 val buffer = ShortArray(vad!!.config.frameSize.value * numberOfChannels * 2)
 //                val buffer = ShortArray(bufferSize())
-                Log.d("vadTest", "numberOfChannels: $numberOfChannels")
-                Log.d("vadTest", "buffer size: " + buffer.size)
+                Log.d(TAG, "numberOfChannels: $numberOfChannels")
+                Log.d(TAG, "buffer size: " + buffer.size)
                 val read = audioRecord!!.read(buffer, 0, buffer.size)
                 detectSpeech(buffer)
             }
@@ -163,8 +163,8 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 override fun onSpeechDetected() {
                     time.setToNow()
                     speechTime = System.currentTimeMillis()
-                    Log.d("audioVolumeTest", "Speech detected")
-                    Log.d("sampleRate", "sample rate: " + vad.config.sampleRate.value)
+                    Log.d(TAG, "VAD: Speech detected")
+                    Log.d(TAG, "sample rate: " + vad.config.sampleRate.value)
                 }
 
                 override fun onNoiseDetected() {
@@ -176,7 +176,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
 //                        Log.d("audioVolumeTest", "Recording stopped")
 //                        Log.d("audioVolumeTest", "Difference: " + (noiseTime - speechTime).toString())
 //                    }
-                    Log.d("audioVolumeTest", "Noise detected ")
+                    Log.d(TAG, "VAD: Noise detected ")
                 }
             })
         }

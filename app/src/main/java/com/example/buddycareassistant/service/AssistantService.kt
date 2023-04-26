@@ -262,10 +262,6 @@ open class AssistantService : Service() {
 //            }
 //        }
 //    }
-
-
-
-
     private fun startRecording() {
         bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
         time.setToNow()
@@ -323,29 +319,29 @@ open class AssistantService : Service() {
         }
     }
 
-    private fun playRecordEndNotification(){
-        if (!isRecordingAvailable) {
-            stopRecording()
-            isRecorderAvailable = true
-            playingAvailable = true
-        }
-//        enableAudioManagerSCO()
-        soundPoolEndNotification = SoundPool.Builder()
-            .setMaxStreams(1)
-            .build()
-
-        soundPoolEndNotification.setOnLoadCompleteListener { soundPooll, sampleId, status ->
-            if (status == 0) {
-                soundPooll.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
-            }
-        }
-        try {
-            val assetFileEndNotification = assets.openFd(END_ALERT)
-            val soundIdEndNotification = soundPoolEndNotification.load(assetFileEndNotification, 1)
-        } catch (e: IOException){
-            e.printStackTrace()
-        }
-    }
+//    private fun playRecordEndNotification(){
+//        if (!isRecordingAvailable) {
+//            stopRecording()
+//            isRecorderAvailable = true
+//            playingAvailable = true
+//        }
+////        enableAudioManagerSCO()
+//        soundPoolEndNotification = SoundPool.Builder()
+//            .setMaxStreams(1)
+//            .build()
+//
+//        soundPoolEndNotification.setOnLoadCompleteListener { soundPooll, sampleId, status ->
+//            if (status == 0) {
+//                soundPooll.play(sampleId, 0.9f, 0.9f, 1, 0, 1f)
+//            }
+//        }
+//        try {
+//            val assetFileEndNotification = assets.openFd(END_ALERT)
+//            val soundIdEndNotification = soundPoolEndNotification.load(assetFileEndNotification, 1)
+//        } catch (e: IOException){
+//            e.printStackTrace()
+//        }
+//    }
     private fun stopRecordingAndPlayNotification(){
 
         stopRecording()
@@ -354,11 +350,13 @@ open class AssistantService : Service() {
         })
         isRecordingAvailable = true
         playingAvailable = true
-        playRecordEndNotification()
+//        playRecordEndNotification()
+
         try {
-            Handler().postDelayed({
-                assistantDemoHelper()
-            }, 1500)
+            assistantDemoHelper()
+//            Handler().postDelayed({
+//                assistantDemoHelper()
+//            }, 1500)
 
         } catch (e: IOException) {
             e.printStackTrace()
