@@ -20,6 +20,7 @@ class ParametersInfoActivity : AppCompatActivity() {
     private lateinit var tvPresencePenalty: TextView
     private lateinit var tvFrequencyPenalty: TextView
     private lateinit var tvBestOf: TextView
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {

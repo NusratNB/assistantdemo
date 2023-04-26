@@ -33,6 +33,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
     private lateinit var tokensCheckBox: CheckBox
     private lateinit var txtChatWindow: TextView
     private lateinit var etChatWindow: TextInputEditText
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }

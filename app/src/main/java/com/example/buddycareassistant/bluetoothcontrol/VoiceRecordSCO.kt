@@ -16,6 +16,7 @@ class VoiceRecordSCO (private val ctx: Context, private val pathToRecords: File)
     private lateinit var outputFile: File
     private var isRecording = false
     val time = Time()
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
 
 
 

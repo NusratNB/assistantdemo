@@ -35,6 +35,7 @@ class BluetoothControlActivity : AppCompatActivity() {
     private lateinit var pathToRecords: File
     private var isRecording = false
     private lateinit var uuid: UUID
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
 
     private var audioManager: AudioManager? = null
     private lateinit var outputFile: File

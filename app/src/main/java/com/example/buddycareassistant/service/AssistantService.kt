@@ -9,9 +9,7 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothProfile
 import android.content.*
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.media.SoundPool
+import android.media.*
 import android.os.Binder
 import android.os.Build
 import android.os.Handler
@@ -39,7 +37,7 @@ open class AssistantService : Service() {
     lateinit var outputFile: File
     lateinit var pathToSavingAudio: File
     private lateinit var pathToRecords: File
-    private val TAG = this::class.java.simpleName
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
     private var isRecordingAvailable = true
     private var bluetoothHeadset: BluetoothHeadset? = null
     private var bluetoothAdapter: BluetoothAdapter? = null
@@ -242,6 +240,29 @@ open class AssistantService : Service() {
         }
 //        disableAudioManagerSCO()
     }
+
+//    private fun playAudioThroughBluetoothDevice() {
+//        audioManager.let { manager ->
+//            val audioDevices = manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+//            for (deviceInfo in audioDevices) {
+//                if (deviceInfo.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+//                    deviceInfo.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP) {
+//
+//                    // Set the audio output to the Bluetooth device
+//                    val audioAttributes = AudioAttributes.Builder()
+//                        .setUsage(AudioAttributes.USAGE_MEDIA)
+//                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+//                        .build()
+//                    manager.setRouting(
+//                        AudioManager.MODE_NORMAL,
+//                        deviceInfo.id,
+//                        AudioManager.Routing.USER)
+//                    break
+//                }
+//            }
+//        }
+//    }
+
 
 
 

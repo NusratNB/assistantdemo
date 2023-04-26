@@ -35,6 +35,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
     private var speechTime: Long = 0
     private var noiseTime: Long = 0
     private val  differenceTime= 3000
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
     var differenceNoiseAndSpeech = 0
 
     init {

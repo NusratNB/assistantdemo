@@ -31,8 +31,7 @@ import java.util.concurrent.TimeUnit
 
 class GoogleServices(val context: Context, private val assetManager: AssetManager ) {
 
-
-
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
     private fun readFromInputStream(inputStream: InputStream): String {
         val reader = BufferedReader(InputStreamReader(inputStream))
         val stringBuilder = StringBuilder()

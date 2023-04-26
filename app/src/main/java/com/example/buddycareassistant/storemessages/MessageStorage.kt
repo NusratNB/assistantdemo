@@ -12,6 +12,7 @@ class MessageStorage(private val context: Context) {
     private val fileName = "GPTMessages.txt"
     private val gptPromptFileName = "GPTPrompt.txt"
     private lateinit var pathToSavingMessages: File
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
 
     fun storeMessages(messages: List<Pair<String, String>>) {
         pathToSavingMessages = File(context.externalCacheDir?.absolutePath, "Messages")

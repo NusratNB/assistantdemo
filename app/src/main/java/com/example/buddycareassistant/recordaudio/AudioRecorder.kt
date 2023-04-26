@@ -18,6 +18,8 @@ import java.io.FileOutputStream
 
 class AudioRecorder(private val ctx: Context) {
 
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
+
     private val audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION
         private val sampleRate = 16000
         private val channelConfig = AudioFormat.CHANNEL_IN_MONO

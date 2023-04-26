@@ -20,7 +20,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.example.buddycareassistant.bluetoothcontrol.BluetoothControlActivity
-import com.example.buddycareassistant.bluetoothcontrol.BluetoothControllerImpl
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
 import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
@@ -49,7 +48,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var handler: Handler
     private lateinit var messageStorage: MessageStorage
     var audioManager: AudioManager? = null
-    private lateinit var bluetoothController: BluetoothControllerImpl
     val time = Time()
     var isRecorderAvailable = true
     private val REQUEST_ENABLE_BT = 1
@@ -64,7 +62,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var voiceRecorder: VoiceRecorder
     private var deviceBluetooth: BluetoothDevice? = null
     private var isRecordingAvailable = true
-    private val TAG = this::class.java.simpleName
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
     private val targetDeviceName =  "DT AudioBF19"
     private val BEGINNING_ALERT = "alerts/Beginning.mp3"
     private var isVoiceCommandReceived = false
