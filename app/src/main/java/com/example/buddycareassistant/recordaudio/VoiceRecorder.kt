@@ -19,8 +19,8 @@ import android.text.format.Time
  * Created by George Konovalov on 11/16/2019.
  */
 class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
-    private val vad: Vad?
-    private var audioRecord: AudioRecord? = null
+    val vad: Vad?
+    private var audioRecordForVAD: AudioRecord? = null
     private var audioRecordForSaving: AudioRecord? = null
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private var thread: Thread? = null
@@ -29,6 +29,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
     @Volatile
     private var isRecording = false
     private var minBufferSizeForAudioSaving = -2
+    private var minBufSize = -2
     private val numberOfChannels = 1
     private var outputFile: File? = null
     val time = Time()
@@ -46,10 +47,12 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
         stop()
 
         audioRecordForSaving = createAudioRecordForSaving()
-        audioRecord = createAudioRecord()
-        if (audioRecord != null) {
+        audioRecordForVAD = createAudioRecord()
+
+        if (audioRecordForVAD != null) {
             isListening = true
-            audioRecord!!.startRecording()
+
+            audioRecordForVAD!!.startRecording()
             audioRecordForSaving!!.startRecording()
             thread = Thread(ProcessVoice())
             thread!!.start()
@@ -58,7 +61,6 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             Thread{
                 writeAudioDataToFile(outputFile)
             }.start()
-
 
         } else {
             Log.w(TAG, "Failed start Voice Recorder!")
@@ -71,13 +73,14 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
             thread!!.interrupt()
             thread = null
         }
-        if (audioRecord != null) {
+        if (audioRecordForVAD != null) {
             try {
-                audioRecord!!.release()
+                audioRecordForVAD!!.stop()
+                audioRecordForVAD!!.release()
             } catch (e: Exception) {
                 Log.e(TAG, "Error stop AudioRecord: ", e)
             }
-            audioRecord = null
+            audioRecordForVAD = null
         }
         if (audioRecordForSaving != null){
             try {
@@ -93,17 +96,17 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
 
     private fun createAudioRecord(): AudioRecord? {
         try {
-            val minBufSize = AudioRecord.getMinBufferSize(
+            minBufSize = AudioRecord.getMinBufferSize(
                 vad!!.config.sampleRate.value,
                 PCM_CHANNEL,
                 PCM_ENCODING_BIT
-            )
+            )*2
             if (minBufSize == AudioRecord.ERROR_BAD_VALUE) {
                 return null
             }
             ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
             val audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
+                MediaRecorder.AudioSource.DEFAULT,
                 vad.config.sampleRate.value,
                 PCM_CHANNEL,
                 PCM_ENCODING_BIT,
@@ -127,7 +130,7 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 return null
             }
             ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
-            val audioRecordForSaving = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION,
+            val audioRecordForSaving = AudioRecord(MediaRecorder.AudioSource.DEFAULT,
                 vad!!.config.sampleRate.value,
                 PCM_CHANNEL,
                 PCM_ENCODING_BIT,
@@ -147,13 +150,11 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
 
     private inner class ProcessVoice : Runnable {
         override fun run() {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
-            while (!Thread.interrupted() && isListening && audioRecord != null) {
-                val buffer = ShortArray(vad!!.config.frameSize.value * numberOfChannels * 2)
+//            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
+            while (!Thread.interrupted() && isListening && audioRecordForVAD != null) {
+                val buffer = ShortArray(vad!!.config.frameSize.value * numberOfChannels)
 //                val buffer = ShortArray(bufferSize())
-                Log.d(TAG, "numberOfChannels: $numberOfChannels")
-                Log.d(TAG, "buffer size: " + buffer.size)
-                val read = audioRecord!!.read(buffer, 0, buffer.size)
+                audioRecordForVAD!!.read(buffer, 0, buffer.size)
                 detectSpeech(buffer)
             }
         }
@@ -164,7 +165,6 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                     time.setToNow()
                     speechTime = System.currentTimeMillis()
                     Log.d(TAG, "VAD: Speech detected")
-                    Log.d(TAG, "sample rate: " + vad.config.sampleRate.value)
                 }
 
                 override fun onNoiseDetected() {
@@ -190,12 +190,13 @@ class VoiceRecorder(private val ctx: Context, config: VadConfig? ) {
                 outputStream.write(data, 0, read)
             }
         }
+        Log.d(TAG, "Recorded audio path: $outputFile")
         outputStream.close()
     }
 
     private fun bufferSizeForAudioSaving(): Int {
 //        Log.d("scoTest", "bufferSize " + (AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 2).toString())
-        return (AudioRecord.getMinBufferSize(vad!!.config.sampleRate.value, PCM_CHANNEL, PCM_ENCODING_BIT) * 2)
+        return (AudioRecord.getMinBufferSize(vad!!.config.sampleRate.value, PCM_CHANNEL, PCM_ENCODING_BIT)*2)
     }
 
     companion object {

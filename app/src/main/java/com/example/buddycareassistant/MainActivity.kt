@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
     private val DEFAULT_SILENCE_DURATION = 500
     private val DEFAULT_VOICE_DURATION = 500
     private var config: VadConfig? = null
-    private lateinit var voiceRecorder: VoiceRecorder
+//    private lateinit var voiceRecorder: VoiceRecorder
     private var deviceBluetooth: BluetoothDevice? = null
     private var isRecordingAvailable = true
     private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
                 Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.MODIFY_PHONE_STATE, Manifest.permission.WAKE_LOCK),200);
+            Manifest.permission.MODIFY_PHONE_STATE, Manifest.permission.WAKE_LOCK, Manifest.permission.ACCESS_NETWORK_STATE),200);
         }
 
 //        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
