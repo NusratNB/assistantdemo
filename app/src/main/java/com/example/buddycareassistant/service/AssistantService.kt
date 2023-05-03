@@ -9,7 +9,6 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothProfile
 import android.content.*
-import android.content.pm.PackageManager
 import android.media.*
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -18,16 +17,15 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.text.format.Time
-import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.example.buddycareassistant.MainActivity
-import com.example.buddycareassistant.Manifest
 import com.example.buddycareassistant.R
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.recordaudio.AudioRecorder
 import com.example.buddycareassistant.storemessages.MessageStorage
+import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 import java.io.IOException
 
@@ -51,7 +49,7 @@ open class AssistantService : Service() {
     private var playingAvailable: Boolean = false
     private var isRecorderAvailable = true
     private lateinit var messageStorage: MessageStorage
-    private lateinit var googlestt: GoogleServices
+    private lateinit var googleServices: GoogleServices
     private var audioFilePath = ""
     private var mediaPlayer: MediaPlayer = MediaPlayer()
     private var mediaPlayerSilence: MediaPlayer = MediaPlayer()
@@ -64,11 +62,12 @@ open class AssistantService : Service() {
     private var soundId = 0
     var isNeverClova: Boolean = false
     private lateinit var ctx: Context
+    private lateinit var logger: LogUtil
 
     override fun onCreate() {
         super.onCreate()
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        googlestt = GoogleServices(this, assets)
+        googleServices = GoogleServices(this, assets)
         mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         mPreferences = getSharedPreferences("buddycare_assistant", MODE_PRIVATE)
         recorder = AudioRecorder(this)
@@ -82,6 +81,10 @@ open class AssistantService : Service() {
             initGPT3Settings()
         }
         ctx = this
+        logger = LogUtil
+
+
+
 
         val filterBluetoothConnection = IntentFilter().apply {
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
@@ -108,10 +111,12 @@ open class AssistantService : Service() {
                 ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
                 val connectedDevices = bluetoothHeadset?.connectedDevices
                 for (conDevice in connectedDevices!!){
-                    Log.i(TAG, "Connected bluetooth devices information. MAC: ${conDevice!!.address}, NAME: ${conDevice!!.name}")
                     if (conDevice.address.slice(0..7) == "78:02:B7"){
                         deviceBluetooth = conDevice
-                        Log.i(TAG, "Connected bluetooth device information. MAC: ${deviceBluetooth!!.address}, NAME: ${deviceBluetooth!!.name}")
+//                        Log.i(TAG, "Connected bluetooth device information. MAC: ${deviceBluetooth!!.address}, NAME: ${deviceBluetooth!!.name}")
+                        logger.i(ctx, TAG, "Connected bluetooth device information. MAC: ${deviceBluetooth!!.address}, NAME: ${deviceBluetooth!!.name}")
+                    }else{
+
                     }
                 }
             }
@@ -144,12 +149,17 @@ open class AssistantService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED) {
                 val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
-                Log.d(TAG, "service current state: $state")
+//                Log.d(TAG, "BluetoothHeadset current state: $state")
+                logger.d(ctx, TAG, "BluetoothHeadset current state: $state")
                 if (state == BluetoothHeadset.STATE_AUDIO_CONNECTED) {
                     if (isRecordingAvailable) {
                         sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
                             putExtra("isRecording", true)
                         })
+
+//                        Log.i(TAG, "isRecordingAvailable status: $isRecordingAvailable")
+                        logger.i(ctx, TAG, "isRecordingAvailable status: $isRecordingAvailable")
+
 //                        startVoiceCommand()
 //                        isRecordingAvailable = false
                     }
@@ -167,8 +177,10 @@ open class AssistantService : Service() {
         stopPlayer()
         closeBluetoothConnection()
         Toast.makeText(this, "Bluetooth headset connection lost", Toast.LENGTH_SHORT).show()
-        Log.i(TAG, "handelDisconnection: Bluetooth headset connection lost")
-        Log.i(TAG, "handelDisconnection: Due to Bluetooth headset disconnection, the recorder is stopped!")
+//        Log.i(TAG, "handelDisconnection: Bluetooth headset connection lost")
+//        Log.i(TAG, "handelDisconnection: Due to Bluetooth headset disconnection, the recorder is stopped!")
+        logger.i(ctx, TAG, "handelDisconnection: Bluetooth headset connection lost")
+        logger.i(ctx, TAG, "handelDisconnection: Due to Bluetooth headset disconnection, the recorder is stopped!")
     }
 
     private fun closeBluetoothConnection() {
@@ -202,8 +214,10 @@ open class AssistantService : Service() {
                     mediaPlayerSilence.setDataSource(audioFilePath)
                     mediaPlayerSilence.prepare()
                     mediaPlayerSilence.start()
+                    logger.i(ctx, TAG, "Playing audio in path: $audioFilePath")
                 }
                 mediaPlayer.start()
+                logger.i(ctx, TAG, "Playing silence")
                 playingAvailable = false
 
             }
@@ -213,6 +227,7 @@ open class AssistantService : Service() {
             prevRecAudio = audioFilePath
 
         } else {
+            logger.i(ctx, TAG, "No record found")
             Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
         }
     }
@@ -251,7 +266,8 @@ open class AssistantService : Service() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID_FOREGROUND_SERVICE, prepareNotification())
         val action = intent.action
-        Log.d("action in foreground: ", "$action")
+//        Log.d("action in foreground: ", "$action")
+        logger.d(ctx, "action in foreground: ", "$action")
         if (action == START_ACTION) {
             startVoiceCommand()
         } else if (action == STOP_ACTION) {
@@ -288,6 +304,8 @@ open class AssistantService : Service() {
         } catch (e: IOException) {
             e.printStackTrace()
         }
+//        Log.i(TAG, "playRecordStartedNotification(): Notification is played")
+        logger.i(ctx, TAG, "playRecordStartedNotification(): Notification is played")
     }
     private fun stopRecordingAndPlayNotification(){
 
@@ -350,8 +368,9 @@ open class AssistantService : Service() {
         val fileName = outputFile
         if (fileName.path.isNotEmpty()) {
             Thread {
-                val ttt = googlestt.getSTTText(fileName.path)
-                Log.d("ddd googlestt", ttt)
+                val ttt = googleServices.getSTTText(fileName.path)
+//                Log.d(TAG, "Google STT result: $ttt")
+                logger.d(ctx, TAG, "Google STT result: $ttt")
                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                     putExtra("isReceived", false)
                     putExtra("data", ttt)
@@ -359,21 +378,24 @@ open class AssistantService : Service() {
                 Thread {
                     if (isNeverClova) {
 
-                        googlestt.getResponseClovaStudio(ttt) { responseFromNaverClova ->
-//                                    Thread{
+                        googleServices.getResponseClovaStudio(ttt) { responseFromNaverClova ->
                             val time = Time()
                             time.setToNow()
                             audioFilePath =
-                                pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S")
+                                "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
                                     .toString() + ".mp3"
                             prevSentAudio = fileName
-                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-                            Log.d("audioFilePath", audioFilePath)
-                            googlestt.googletts(audioFilePath, responseFromNaverClova)
-//                            if (prevRecAudio.toString().isNotEmpty()){
-//                                val ff = File(prevRecAudio)
-//                                ff.delete()
-//                            }
+
+//                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+//                            Log.d("audioFilePath", audioFilePath)
+                            logger.d(ctx, TAG, "pathToSavingAudio: $pathToSavingAudio")
+                            logger.d(ctx, TAG, "audioFilePath, $audioFilePath")
+
+                            googleServices.googletts(audioFilePath, responseFromNaverClova)
+                            if (prevRecAudio.toString().isNotEmpty()){
+                                val ff = File(prevRecAudio)
+                                ff.delete()
+                            }
                             sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                 putExtra("isReceived", true)
                                 putExtra("isNeverClova", true)
@@ -384,24 +406,26 @@ open class AssistantService : Service() {
                             playAudio()
                         }
                     } else {
-                        var korToEng = googlestt.googleTranslatorKoreanToEnglish(ttt)
+                        var korToEng = googleServices.googleTranslatorKoreanToEnglish(ttt)
 
-                        Log.d("ddd korToEng", korToEng)
+//                        Log.d(TAG,"Korean to English translation: $korToEng" )
+                        logger.d(ctx, TAG,"Korean to English translation: $korToEng")
                         val gpt3Settings = getGPT3Settings()
                         if (korToEng == "") {
                             korToEng = "I don't understand, can you repeat."
-                            val engToKor = googlestt.googleTranslatorEnglishToKorean(korToEng)
+                            val engToKor = googleServices.googleTranslatorEnglishToKorean(korToEng)
                             val time = Time()
                             time.setToNow()
                             audioFilePath =
-                                pathToSavingAudio.toString() + "/" + time.format("%Y%m%d%H%M%S")
+                                "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
                                     .toString() + ".mp3"
                             prevSentAudio = fileName
-                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-                            Log.d("audioFilePath", audioFilePath)
+//                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+//                            Log.d("audioFilePath", audioFilePath)
+                            logger.d(ctx, TAG, "pathToSavingAudio $pathToSavingAudio")
+                            logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
 
-                            googlestt.googletts(audioFilePath, engToKor)
-                            Log.d("ddd googletts", audioFilePath)
+                            googleServices.googletts(audioFilePath, engToKor)
 
 //                            if (prevRecAudio.isNotEmpty()){
 //                                val ff = File(prevRecAudio)
@@ -415,19 +439,21 @@ open class AssistantService : Service() {
                             })
                             playAudio()
                         } else {
-                            googlestt.getResponseGPT3(gpt3Settings, korToEng) { responseFromGPT3 ->
+                            googleServices.getResponseGPT3(gpt3Settings, korToEng) { responseFromGPT3 ->
                                 val engToKor =
-                                    googlestt.googleTranslatorEnglishToKorean(responseFromGPT3)
+                                    googleServices.googleTranslatorEnglishToKorean(responseFromGPT3)
                                 val userMessage = "User:$korToEng"
                                 val gptMessage = "Assistant:$responseFromGPT3"
-                                Log.d("messages", "User: $userMessage; gpt: $gptMessage")
+//                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
+                                logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
 
                                 val messages = listOf(
                                     Pair(userMessage, gptMessage)
                                 )
                                 messageStorage.storeMessages(messages)
 
-                                Log.d("ddd engToKor", engToKor)
+//                                Log.d(TAG, "English to Korean translation: $engToKor")
+                                logger.d(ctx, TAG, "English to Korean translation: $engToKor")
 
                                 val time = Time()
                                 time.setToNow()
@@ -435,11 +461,14 @@ open class AssistantService : Service() {
                                     "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
                                         .toString() + ".mp3"
                                 prevSentAudio = fileName
-                                Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-                                Log.d("audioFilePath", audioFilePath)
+//                                Log.d(TAG, "pathToSavingAudio: $pathToSavingAudio")
+//                                Log.d(TAG, "audioFilePath: $audioFilePath")
+                                logger.d(ctx, TAG, "pathToSavingAudio: $pathToSavingAudio")
+                                logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
 
-                                googlestt.googletts(audioFilePath, engToKor)
-                                Log.d("ddd googletts", audioFilePath)
+                                googleServices.googletts(audioFilePath, engToKor)
+//                                Log.d(TAG,"Google TTS file path: $audioFilePath")
+                                logger.d(ctx, TAG,"Google TTS file path: $audioFilePath")
 
 //                                if (prevRecAudio.isNotEmpty()){
 //                                    val ff = File(prevRecAudio)

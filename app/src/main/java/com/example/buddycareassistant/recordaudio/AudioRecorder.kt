@@ -2,16 +2,11 @@ package com.example.buddycareassistant.recordaudio
 
 import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.Build
-import android.util.Log
-import android.widget.Toast
-import androidx.annotation.NonNull
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
+import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 import java.io.FileOutputStream
 
@@ -19,6 +14,7 @@ import java.io.FileOutputStream
 class AudioRecorder(private val ctx: Context) {
 
     private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
+    private val logger = LogUtil
 
     private val audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION
         private val sampleRate = 16000
@@ -27,23 +23,27 @@ class AudioRecorder(private val ctx: Context) {
 
         private var audioRecord: AudioRecord? = null
         private var isRecording = false
-    private var recorder = MediaRecorder()
 
 
 
     fun start(outputFile: File) {
         ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
         audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize())
+//        Log.i(TAG, "Is audioRecord is initialized: ${audioRecord?.state == AudioRecord.STATE_INITIALIZED}")
+        logger.i(ctx, TAG, "Is audioRecord is initialized: ${audioRecord?.state == AudioRecord.STATE_INITIALIZED}")
+
         if (audioRecord?.state == AudioRecord.STATE_INITIALIZED){
+//            Log.d(TAG, "Recording is started.")
+            logger.d(ctx, TAG, "Recording is started.")
             audioRecord?.startRecording()
         }
 
 //        Log.d("scoTest ", "AudioRecorder file path $outputFile")
 
         isRecording = true
-        Thread(Runnable {
+        Thread {
             writeAudioDataToFile(outputFile)
-        }).start()
+        }.start()
     }
 
     fun stop() {
@@ -51,11 +51,13 @@ class AudioRecorder(private val ctx: Context) {
 //        audioRecord?.release()
         audioRecord = null
         isRecording = false
+        logger.i(ctx, TAG, "Record has been stopped")
     }
 
     private fun writeAudioDataToFile(outputFile: File) {
         val data = ByteArray(bufferSize())
         val outputStream = FileOutputStream(outputFile)
+        logger.i(ctx, TAG, "Writing audio to the file has been started.")
         while (isRecording) {
             val read = audioRecord?.read(data, 0, bufferSize()) ?: 0
             if (read > 0) {
@@ -63,10 +65,10 @@ class AudioRecorder(private val ctx: Context) {
             }
         }
         outputStream.close()
+        logger.i(ctx, TAG, "Writing audio to the file has been finished")
     }
 
     private fun bufferSize(): Int {
-//        Log.d("scoTest", "bufferSize " + (AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 2).toString())
         return AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 2
     }
 }

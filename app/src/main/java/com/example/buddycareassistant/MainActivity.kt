@@ -1,17 +1,9 @@
 package com.example.buddycareassistant
 
 import android.Manifest
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothHeadset
 import android.content.*
 import android.content.pm.PackageManager
-import android.media.AudioManager
-import android.net.Uri
 import android.os.*
-import android.provider.Settings
-import android.text.format.Time
-import android.util.Log
 import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -23,10 +15,9 @@ import com.example.buddycareassistant.bluetoothcontrol.BluetoothControlActivity
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
 import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
-import com.example.buddycareassistant.recordaudio.VoiceRecorder
 import com.example.buddycareassistant.service.AssistantService
 import com.example.buddycareassistant.storemessages.MessageStorage
-import com.konovalov.vad.VadConfig
+import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 
 
@@ -37,9 +28,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var  btnNewChatRoom: Button
     private lateinit var btnSettings: Button
     private lateinit var btnBluetoothControl: Button
-    private lateinit var fullAudioPath: File
-    private lateinit var pathToRecords: File
-    private lateinit var pathToSavingAudio: File
     private lateinit var pathToSavingMessagesMainActivity: File
     private lateinit var txtSent: TextView
     private lateinit var txtReceived: TextView
@@ -47,29 +35,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var googlestt: GoogleServices
     private lateinit var handler: Handler
     private lateinit var messageStorage: MessageStorage
-    var audioManager: AudioManager? = null
-    val time = Time()
-    var isRecorderAvailable = true
     private val REQUEST_ENABLE_BT = 1
-    private var bluetoothAdapter: BluetoothAdapter? = null
-    private var bluetoothHeadset: BluetoothHeadset? = null
-    private val DEFAULT_SAMPLE_RATE = VadConfig.SampleRate.SAMPLE_RATE_16K
-    private val DEFAULT_FRAME_SIZE = VadConfig.FrameSize.FRAME_SIZE_160
-    private val DEFAULT_MODE = VadConfig.Mode.VERY_AGGRESSIVE
-    private val DEFAULT_SILENCE_DURATION = 500
-    private val DEFAULT_VOICE_DURATION = 500
-    private var config: VadConfig? = null
-//    private lateinit var voiceRecorder: VoiceRecorder
-    private var deviceBluetooth: BluetoothDevice? = null
-    private var isRecordingAvailable = true
-    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
-    private val targetDeviceName =  "DT AudioBF19"
-    private val BEGINNING_ALERT = "alerts/Beginning.mp3"
-    private var isVoiceCommandReceived = false
-    private lateinit var wakeLock: PowerManager.WakeLock
+    private lateinit var logger: LogUtil
+
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
     private var foregroundBleService: AssistantService? = null
     private val serviceConnection by lazy {
         object : ServiceConnection {
@@ -112,22 +84,10 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
                 Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.MODIFY_PHONE_STATE, Manifest.permission.WAKE_LOCK, Manifest.permission.ACCESS_NETWORK_STATE),200);
+              Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.INTERNET, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.FOREGROUND_SERVICE,
+            Manifest.permission.MODIFY_PHONE_STATE),200);
         }
-
-//        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-//        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::PartialWakeLock")
-
-//        config = VadConfig.newBuilder()
-//            .setSampleRate(DEFAULT_SAMPLE_RATE)
-//            .setFrameSize(DEFAULT_FRAME_SIZE)
-//            .setMode(DEFAULT_MODE)
-//            .setSilenceDurationMillis(DEFAULT_SILENCE_DURATION)
-//            .setVoiceDurationMillis(DEFAULT_VOICE_DURATION)
-//            .build()
-//
-//        voiceRecorder = VoiceRecorder(this, config)
-
+        logger = LogUtil
         messageStorage = MessageStorage(this)
         btnNewChatRoom = findViewById(R.id.btnNewChatRoom)
 
@@ -154,6 +114,7 @@ class MainActivity : AppCompatActivity() {
         """
             val file = File(pathToSavingMessagesMainActivity, gptPromptFileName)
             messageStorage.saveGptPrompt(tempText)
+            logger.i(this, TAG, "New chat room has been created")
 
             Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
         }
@@ -240,7 +201,8 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
 
-        Log.d("scoTest", intent?.action.toString())
+//        Log.d("scoTest", intent?.action.toString())
+        logger.d(this, TAG, "Received state from watch: ${intent?.action}")
 
         if(intent?.action == "android.intent.action.VOICE_COMMAND") {
             val intent = Intent(this, AssistantService::class.java)

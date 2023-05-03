@@ -2,13 +2,10 @@ package com.example.buddycareassistant.googlespeechservices
 
 import android.content.Context
 import android.content.res.AssetManager
-import android.media.MediaDataSource
 import android.media.MediaPlayer
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import com.example.buddycareassistant.storemessages.MessageStorage
-import com.google.api.client.json.Json
+import com.example.buddycareassistant.utils.LogUtil
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
@@ -19,7 +16,6 @@ import com.google.cloud.translate.Translate
 import com.google.cloud.translate.TranslateOptions
 import com.google.cloud.translate.Translation
 import com.google.protobuf.ByteString
-import io.grpc.stub.StreamObserver
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.json.JSONArray
@@ -55,6 +51,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
     private val mediaPlayer: MediaPlayer = MediaPlayer()
     private val TIMEOUT_IN_SECONDS = 60
     private val messageStorage: MessageStorage = MessageStorage(context)
+    private val logger = LogUtil
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
 
 
@@ -85,7 +82,9 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 transcription += "${alternative.transcript} "
             }
         }
-        Log.d(TAG, "Google STT result: $transcription")
+//        Log.d(TAG, "Google STT result: $transcription")
+        logger.d(context, TAG, "Google STT result: $transcription")
+
         speechClient.close()
         speechClient.close()
         return transcription
@@ -187,7 +186,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         if (logprobs != "null"){
             logprobs?.toInt()
         }
-        Log.d("tokensInfo", tokensInfo.toString())
+//        Log.d("tokensInfo", tokensInfo.toString())
 
 
         val newRequestMessageJson = JSONObject()
@@ -263,7 +262,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                println("Request failed: $e")
+//                println("Request failed: $e")
+                logger.e(context, TAG, "Request failed: $e")
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -271,7 +271,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 val responseMessage = response.message
                 val responseBody = response.body?.source()
                 if (responseCode != 200 || responseBody == null) {
-                    Log.e("GPT3 Code Err: ", "$responseCode $responseMessage: $responseBody")
+//                    Log.e("GPT3 Code Err: ", "$responseCode $responseMessage: $responseBody")
+                    logger.e(context, TAG, "GPT3 Code Err: $responseCode $responseMessage: $responseBody")
 
                 }
                 try {
@@ -279,7 +280,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                     val json = JSONObject(responseBody!!.readUtf8())
 
                     val result = json.get("choices")
-                    Log.d(TAG, "GPT3 result: $result")
+//                    Log.d(TAG, "GPT3 result: $result")
+                    logger.d(context, TAG, "GPT3 result: $result")
                     val resultJson = JSONArray(result.toString())
                     val text = JSONObject(resultJson.get(0).toString())
                     val resText = text["message"]
@@ -293,9 +295,11 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                     messagesArray.put(assistantResponse)
                     messageStorage.saveGptPrompt(promptJson.toString())
 
-                    Log.d(TAG, "GPT3 content: $content")
+//                    Log.d(TAG, "GPT3 content: $content")
+                    logger.d(context, TAG, "GPT3 content: $content")
                 } catch (e: Exception) {
                     Log.d(TAG, "GPT3 Error: " + e.stackTraceToString() )
+                    logger.d(context, TAG, "GPT3 Error: " + e.stackTraceToString() )
                 }
                 callback(responseGPT3)
 
