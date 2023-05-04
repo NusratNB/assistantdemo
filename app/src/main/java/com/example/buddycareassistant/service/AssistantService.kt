@@ -148,8 +148,8 @@ open class AssistantService : Service() {
     inner class AudioStateReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED) {
-//                val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
-                val state = intent.getIntExtra(BluetoothHeadset.EXTRA_PREVIOUS_STATE, -1)
+                val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
+//                val state = intent.getIntExtra(BluetoothHeadset.EXTRA_PREVIOUS_STATE, -1)
 //                Log.d(TAG, "BluetoothHeadset current state: $state")
                 logger.d(ctx, TAG, "BluetoothHeadset current state: $state")
 //                logger.d(ctx, TAG, "BluetoothHeadset current state: $state")
