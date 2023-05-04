@@ -5,12 +5,15 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.os.*
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.buddycareassistant.bluetoothcontrol.BluetoothControlActivity
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
 import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
@@ -22,21 +25,27 @@ import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var btnRecord: Button
-    private lateinit var btnStopAudio: Button
-    private lateinit var btnInfo: Button
-    private lateinit var  btnNewChatRoom: Button
-    private lateinit var btnSettings: Button
-    private lateinit var btnBluetoothControl: Button
+//    private lateinit var btnRecord: Button
+//    private lateinit var btnStopAudio: Button
+//    private lateinit var btnInfo: Button
+//    private lateinit var  btnNewChatRoom: Button
+//    private lateinit var btnSettings: Button
+//    private lateinit var btnBluetoothControl: Button
     private lateinit var pathToSavingMessagesMainActivity: File
-    private lateinit var txtSent: TextView
-    private lateinit var txtReceived: TextView
-    private lateinit var radioGroupLM: RadioGroup
+//    private lateinit var txtSent: TextView
+//    private lateinit var txtReceived: TextView
+//    private lateinit var radioGroupLM: RadioGroup
     private lateinit var googlestt: GoogleServices
     private lateinit var handler: Handler
     private lateinit var messageStorage: MessageStorage
     private val REQUEST_ENABLE_BT = 1
     private lateinit var logger: LogUtil
+    private lateinit var tvRecordingStatus: TextView
+    private lateinit var rvAssistant: RecyclerView
+    private val assistantAdapter by lazy { AssistantChatAdapter() }
+    private lateinit var ivSettings: ImageView
+    private lateinit var ivClear: ImageView
+    private lateinit var ivBluetoothState: ImageView
 
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
@@ -63,35 +72,24 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main2)
         startService(Intent(this, AssistantService::class.java))
         bindService(Intent(this, AssistantService::class.java), serviceConnection, BIND_AUTO_CREATE)
         googlestt = GoogleServices(this, assets)
-        radioGroupLM = findViewById(R.id.radGroupLMType)
-//        recorder = AudioRecorder(this)
+        ivSettings = findViewById(R.id.ivSettings)
+        ivClear = findViewById(R.id.ivClear)
+        ivBluetoothState = findViewById(R.id.ivBluetoothState)
+        tvRecordingStatus = findViewById(R.id.tvRecordingStatus)
+        rvAssistant = findViewById(R.id.rvChat)
+        rvAssistant.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, true)
+        rvAssistant.adapter = assistantAdapter
 
-        radioGroupLM.setOnCheckedChangeListener { radioGroup, id ->
-
-            if(id == R.id.radBtnGPT3) {
-                mPreferences.edit().putString("language_model", "gpt-3").apply()
-                foregroundBleService?.isNeverClova = false
-            } else {
-                mPreferences.edit().putString("language_model", "naver_clova").apply()
-                foregroundBleService?.isNeverClova = true
-            }
+        ivSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
-                Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION,
-              Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.INTERNET, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.FOREGROUND_SERVICE,
-            Manifest.permission.MODIFY_PHONE_STATE),200);
-        }
-        logger = LogUtil
-        messageStorage = MessageStorage(this)
-        btnNewChatRoom = findViewById(R.id.btnNewChatRoom)
-
-        btnNewChatRoom.setOnClickListener {
+        ivClear.setOnClickListener {
+            assistantAdapter.items.clear()
+            assistantAdapter.notifyDataSetChanged()
             val gptPromptFileName = "GPTPrompt.txt"
             pathToSavingMessagesMainActivity = File(this.externalCacheDir?.absolutePath, "Messages")
             if (!pathToSavingMessagesMainActivity.exists()){
@@ -119,6 +117,58 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
         }
 
+//        radioGroupLM = findViewById(R.id.radGroupLMType)
+////        recorder = AudioRecorder(this)
+//
+//        radioGroupLM.setOnCheckedChangeListener { radioGroup, id ->
+//
+//            if(id == R.id.radBtnGPT3) {
+//                mPreferences.edit().putString("language_model", "gpt-3").apply()
+//                foregroundBleService?.isNeverClova = false
+//            } else {
+//                mPreferences.edit().putString("language_model", "naver_clova").apply()
+//                foregroundBleService?.isNeverClova = true
+//            }
+//        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
+                Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.ACCESS_COARSE_LOCATION,
+              Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.INTERNET, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.FOREGROUND_SERVICE,
+            Manifest.permission.MODIFY_PHONE_STATE),200);
+        }
+        logger = LogUtil
+        messageStorage = MessageStorage(this)
+        /*btnNewChatRoom = findViewById(R.id.btnNewChatRoom)
+
+        btnNewChatRoom.setOnClickListener {
+            val gptPromptFileName = "GPTPrompt.txt"
+            pathToSavingMessagesMainActivity = File(this.externalCacheDir?.absolutePath, "Messages")
+            if (!pathToSavingMessagesMainActivity.exists()){
+                pathToSavingMessagesMainActivity.mkdir()
+            }
+            val tempText = """
+            {
+              "model": "gpt-3.5-turbo",
+              "messages": [
+                        {"role": "system", "content": "You are a helpful friend."}
+                    ],
+               "max_tokens": 200,
+               "temperature": 1.0,
+               "top_p": 1.0,
+               "n": 1,
+               "stream": false,
+               "frequency_penalty":0.0,
+               "presence_penalty":0.6
+            }
+        """
+            val file = File(pathToSavingMessagesMainActivity, gptPromptFileName)
+            messageStorage.saveGptPrompt(tempText)
+            logger.i(this, TAG, "New chat room has been created")
+
+            Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
+        }*/
+
 //        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 //
 //        if (bluetoothAdapter == null) {
@@ -137,12 +187,11 @@ class MainActivity : AppCompatActivity() {
 //            pathToSavingAudio.mkdir()
 //            initGPT3Settings()
 //        }
-        btnBluetoothControl = findViewById(R.id.btnBluetoothControl)
+        /*btnBluetoothControl = findViewById(R.id.btnBluetoothControl)
         btnBluetoothControl.setOnClickListener {
             startActivity(Intent(this@MainActivity, BluetoothControlActivity::class.java))
         }
 
-        handler = Handler()
         btnRecord = findViewById(R.id.btnRecord)
         btnRecord.text = "Start"
 
@@ -162,26 +211,27 @@ class MainActivity : AppCompatActivity() {
 
         btnStopAudio.setOnClickListener {
             foregroundBleService?.stopPlayer()
-        }
+        }*/
 
-        if(mPreferences.getString("language_model", "gpt-3").equals("gpt-3")){
-            radioGroupLM.check(R.id.radBtnGPT3)
-        } else {
-            radioGroupLM.check(R.id.radBtnNaverClova)
-        }
+//        if(mPreferences.getString("language_model", "gpt-3").equals("gpt-3")){
+//            radioGroupLM.check(R.id.radBtnGPT3)
+//        } else {
+//            radioGroupLM.check(R.id.radBtnNaverClova)
+//        }
+        handler = Handler()
         onNewIntent(intent)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putString("txtSentText", txtSent.text.toString())
-        outState.putString("txtReceivedText", txtReceived.text.toString())
+//        outState.putString("txtSentText", txtSent.text.toString())
+//        outState.putString("txtReceivedText", txtReceived.text.toString())
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        txtSent.text = savedInstanceState.getString("txtSentText")
-        txtReceived.text = savedInstanceState.getString("txtReceivedText")
+//        txtSent.text = savedInstanceState.getString("txtSentText")
+//        txtReceived.text = savedInstanceState.getString("txtReceivedText")
     }
 
     override fun onResume() {
@@ -227,9 +277,12 @@ class MainActivity : AppCompatActivity() {
             if (intent?.action.equals(RECORDING_STATE)) {
                 val isRecording = intent?.getBooleanExtra("isRecording", false) ?: false
                 if (isRecording) {
-                     btnRecord.text = "Recording"
+                    tvRecordingStatus.text = "Recording..."
                 } else {
-                    btnRecord.text = "Record"
+                    tvRecordingStatus.text = ""
+                    val requestItem = Pair(false, "....")
+                    assistantAdapter.items.add(0, requestItem)
+                    assistantAdapter.notifyDataSetChanged()
                 }
             } else if (intent?.action.equals(ASSISTANT_RESPONSE_STATE)) {
                 val isReceived = intent?.getBooleanExtra("isReceived", false)
@@ -239,16 +292,15 @@ class MainActivity : AppCompatActivity() {
                 val isRecording = intent?.getStringExtra("isRecording")
 
                 if (isReceived == true) {
-                    if (isNeverClova == true) {
-                        txtSent.text ="Sent: $data"
-                        txtReceived.text = "Received: $responseText"
-                    } else {
-                        txtSent.text ="Sent: $data"
-                        txtReceived.text = "Received: $responseText"
-                    }
+                    assistantAdapter.items.removeFirst()
+                    val requestItem = Pair(false, data!!)
+                    val responseItem = Pair(true, responseText!!)
+                    assistantAdapter.items.add(0, requestItem)
+                    assistantAdapter.items.add(0, responseItem)
+                    assistantAdapter.notifyDataSetChanged()
                 } else {
-                    txtSent.text ="Sent: $data"
-                    txtReceived.text = "Received: Not received yet..."
+//                    txtSent.text ="Sent: $data"
+//                    txtReceived.text = "Received: Not received yet..."
                 }
             }
         }

@@ -153,10 +153,6 @@ open class AssistantService : Service() {
                 logger.d(ctx, TAG, "BluetoothHeadset current state: $state")
                 if (state == BluetoothHeadset.STATE_AUDIO_CONNECTED) {
                     if (isRecordingAvailable) {
-                        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-                            putExtra("isRecording", true)
-                        })
-
 //                        Log.i(TAG, "isRecordingAvailable status: $isRecordingAvailable")
                         logger.i(ctx, TAG, "isRecordingAvailable status: $isRecordingAvailable")
 
@@ -210,11 +206,14 @@ open class AssistantService : Service() {
                 )
                 mediaPlayer.prepare()
                 mediaPlayer.setOnCompletionListener {
-                    mediaPlayerSilence.reset()
-                    mediaPlayerSilence.setDataSource(audioFilePath)
-                    mediaPlayerSilence.prepare()
-                    mediaPlayerSilence.start()
-                    logger.i(ctx, TAG, "Playing audio in path: $audioFilePath")
+                    val file = File(audioFilePath)
+                    if (file.exists()) {
+                        mediaPlayerSilence.reset()
+                        mediaPlayerSilence.setDataSource(audioFilePath)
+                        mediaPlayerSilence.prepare()
+                        mediaPlayerSilence.start()
+                        logger.i(ctx, TAG, "Playing audio in path: $audioFilePath")
+                    }
                 }
                 mediaPlayer.start()
                 logger.i(ctx, TAG, "Playing silence")
@@ -247,6 +246,9 @@ open class AssistantService : Service() {
     }
 
     private fun startRecording() {
+        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+            putExtra("isRecording", true)
+        })
         ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
         bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
         time.setToNow()
