@@ -371,7 +371,6 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                     Log.e("Json Error: ", e.toString())
                 }
                 callback(responseText)
-
             }
         })
 
