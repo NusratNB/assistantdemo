@@ -1,16 +1,11 @@
 package com.example.buddycareassistant
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.MenuItem
-import android.view.View
-import android.widget.AdapterView
-import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
-import java.util.prefs.Preferences
 
 class SettingsActivity: AppCompatActivity() {
     private lateinit var spMemoryQuality: Spinner
@@ -49,21 +44,17 @@ class SettingsActivity: AppCompatActivity() {
         spGender.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1,
             genders)
 
-        spMemoryQuality.setSelection(pref.getInt("memory_quality_position", 0))
-        spLanguage.setSelection(pref.getInt("language_position", 0))
-        spConversationalStyle.setSelection(pref.getInt("conversational_style", 0))
-        spGender.setSelection(pref.getInt("gender_position", 0))
+        spMemoryQuality.setSelection(memoryQualities.indexOf(pref.getString("memory_quality", "Low")))
+        spLanguage.setSelection(languages.indexOf(pref.getString("language", "Korean")))
+        spConversationalStyle.setSelection(conversationalStyles.indexOf(pref.getString("conversational", "More Creative")))
+        spGender.setSelection(genders.indexOf(pref.getString("gender", "Male")))
 
         btnSave.setOnClickListener {
-            val memoryQualityPosition = spMemoryQuality.selectedItemPosition
-            val languagePosition = spMemoryQuality.selectedItemPosition
-            val conversationalStylePosition = spMemoryQuality.selectedItemPosition
-            val genderPosition = spMemoryQuality.selectedItemPosition
             pref.edit()
-                .putInt("memory_quality_position", memoryQualityPosition)
-                .putInt("language_position", languagePosition)
-                .putInt("conversational_style", conversationalStylePosition)
-                .putInt("gender_position", genderPosition)
+                .putString("memory_quality", spMemoryQuality.selectedItem.toString())
+                .putString("language", spLanguage.selectedItem.toString())
+                .putString("conversational", spConversationalStyle.selectedItem.toString())
+                .putString("gender", spGender.selectedItem.toString())
                 .apply()
 
             finish()
