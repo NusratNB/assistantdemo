@@ -6,6 +6,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
+import com.example.buddycareassistant.utils.LogUtil
 
 class SettingsActivity: AppCompatActivity() {
     private lateinit var spMemoryQuality: Spinner
@@ -13,6 +14,8 @@ class SettingsActivity: AppCompatActivity() {
     private lateinit var spConversationalStyle: Spinner
     private lateinit var spGender: Spinner
     private lateinit var btnSave: Button
+    private lateinit var logger: LogUtil
+    private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
 
     private val memoryQualities = arrayOf("Low", "Medium", "High")
     private val languages = arrayOf("Korean", "English")
@@ -34,6 +37,7 @@ class SettingsActivity: AppCompatActivity() {
         supportActionBar?.setDisplayShowHomeEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Settings"
+        logger = LogUtil
 
         spMemoryQuality.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1,
             memoryQualities)
@@ -58,6 +62,9 @@ class SettingsActivity: AppCompatActivity() {
                 .apply()
 
             finish()
+
+            logger.i(this, TAG, "Saved settings: memory_quality = ${spMemoryQuality.selectedItem} language = ${spLanguage.selectedItem}" +
+                    " conversational = ${spConversationalStyle.selectedItem} gender = ${spGender.selectedItem}")
         }
     }
 

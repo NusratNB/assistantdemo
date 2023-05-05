@@ -75,7 +75,7 @@ open class AssistantService : Service() {
         googleServices = GoogleServices(this, assets)
         mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         mPreferences = getSharedPreferences("buddycare_assistant", MODE_PRIVATE)
-        pref = getSharedPreferences("assistant", MODE_PRIVATE)
+        pref = getSharedPreferences("assistant_demo", MODE_PRIVATE)
         recorder = AudioRecorder(this)
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord")
         if (!pathToRecords.exists()) {
@@ -467,7 +467,7 @@ open class AssistantService : Service() {
                             })
                             playAudio()
                         } else {
-                            googleServices.getResponseGPT3(gpt3Settings, korToEng, memory_quality) { responseFromGPT3 ->
+                            googleServices.getResponseGPT3(gpt3Settings, korToEng, memory_quality, conversational) { responseFromGPT3 ->
                                 // engToKor: Google Translator result
                                 val engToKor =
                                     googleServices.googleTranslatorEnglishToKorean(responseFromGPT3, language)
@@ -578,6 +578,8 @@ open class AssistantService : Service() {
 
         val settings = mapOf("memory_quality" to memory_quality, "language" to language,
                         "conversational" to conversational, "gender" to gender)
+
+        logger.i(ctx, TAG, "Settings: $settings")
 
         return settings
     }

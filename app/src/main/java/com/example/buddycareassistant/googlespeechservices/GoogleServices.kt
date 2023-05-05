@@ -107,12 +107,12 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
             "en-US"
         }
 
-        ttsGender = if (gender=="Female"){
-            SsmlVoiceGender.FEMALE
-        } else{
-            SsmlVoiceGender.MALE
-        }
-        logger.d(context, TAG, "gender: $gender language: $language Voice: $ttsGender")
+//        ttsGender = if (gender=="Female"){
+//            SsmlVoiceGender.FEMALE
+//        } else{
+//            SsmlVoiceGender.MALE
+//        }
+
 
         val transportChannelProvider = TextToSpeechSettings.defaultGrpcTransportProviderBuilder()
             .setMaxInboundMessageSize(1024 * 1024 * 100) // Set max message size to 100 MB
@@ -128,7 +128,6 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         if (gender=="Female"){
             val voice = VoiceSelectionParams.newBuilder()
                 .setLanguageCode(languageTTS)
-                .setSsmlGender(SsmlVoiceGender.FEMALE)
                 .setSsmlGenderValue(SsmlVoiceGender.FEMALE_VALUE)
                 .build()
             val audioConfig = AudioConfig.newBuilder()
@@ -140,10 +139,10 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 out.write(audioContents.toByteArray())
                 out.close()
             }
-        } else{
+            logger.d(context, TAG, "gender: $gender language: $language ")
+        } else if (gender == "Male"){
             val voice = VoiceSelectionParams.newBuilder()
                 .setLanguageCode(languageTTS)
-                .setSsmlGender(SsmlVoiceGender.MALE)
                 .setSsmlGenderValue(SsmlVoiceGender.MALE_VALUE)
                 .build()
 
@@ -156,6 +155,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 out.write(audioContents.toByteArray())
                 out.close()
             }
+            logger.d(context, TAG, "gender: $gender language: $language ")
         }
 
         speechClient.close()
@@ -223,14 +223,14 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         return resultText
     }
 
-    fun getResponseGPT3(gpt3Settings: Map<String, String?>, inputText: String, memoryQuality: String, callback: (String) -> Unit){
+    fun getResponseGPT3(gpt3Settings: Map<String, String?>, inputText: String, memoryQuality: String, conversational:String, callback: (String) -> Unit){
         val API_KEY = "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"
         val host = "api.openai.com"
 
         val model = gpt3Settings["model"].toString()
         val max_tokens = gpt3Settings["max_tokens"]?.toInt()
-        val temperature = gpt3Settings["temperature"]?.toFloat()
-        val top_p = gpt3Settings["top_p"]?.toFloat()
+        var temperature = gpt3Settings["temperature"]?.toFloat()
+        var top_p = gpt3Settings["top_p"]?.toFloat()
         val n = gpt3Settings["n"]?.toInt()
         val stream = gpt3Settings["stream"].toBoolean()
         val logprobs = gpt3Settings["logprobs"]
@@ -240,6 +240,17 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         var chatWindowSize = gpt3Settings["chatWindowSize"]?.toInt()
         if (logprobs != "null"){
             logprobs?.toInt()
+        }
+
+        if (conversational == "More Creative"){
+            temperature = 0.8f
+            top_p = 0.9f
+        }else if (conversational == "More Balanced"){
+            temperature = 0.6f
+            top_p = 0.8f
+        }else {
+            temperature = 0.3f
+            top_p = 0.5f
         }
 //        Log.d("tokensInfo", tokensInfo.toString())
 
@@ -311,9 +322,11 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         val promptJson = JSONObject(prompt)
 
 
-        Log.d("ddd gpt3 prompt", prompt)
+//        Log.d("ddd gpt3 prompt", prompt)
+        logger.d(context, TAG, "GPT Prompt: $prompt")
         val url = "https://$host/v1/chat/completions"
         Log.d("gpt url:", url)
+        logger.d(context, TAG, "gpt url: $url")
         val client = OkHttpClient.Builder()
             .connectTimeout(TIMEOUT_IN_SECONDS.toLong(), TimeUnit.SECONDS)
             .readTimeout(TIMEOUT_IN_SECONDS.toLong(), TimeUnit.SECONDS)
