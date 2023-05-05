@@ -447,6 +447,18 @@ open class AssistantService : Service() {
 //                                val ff = File(prevRecAudio)
 //                                ff.delete()
 //                            }
+
+                            val userMessage = "User:$ttt"
+                            val gptMessage = "Assistant:$engToKor"
+//                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
+                            logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
+
+                            val messages = listOf(
+                                Pair(gptMessage, userMessage)
+                            )
+//                            messageStorage.storeMessages(messages)
+
+
                             sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                 putExtra("isReceived", true)
                                 putExtra("isNeverClova", false)
@@ -465,7 +477,7 @@ open class AssistantService : Service() {
                                 logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
 
                                 val messages = listOf(
-                                    Pair(userMessage, gptMessage)
+                                    Pair(gptMessage, userMessage)
                                 )
                                 messageStorage.storeMessages(messages)
 

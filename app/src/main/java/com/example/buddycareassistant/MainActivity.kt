@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var messageStorage: MessageStorage
     private val REQUEST_ENABLE_BT = 1
     private lateinit var logger: LogUtil
+    private lateinit var tvLanguage: TextView
     private lateinit var tvRecordingStatus: TextView
     private lateinit var rvAssistant: RecyclerView
     private val assistantAdapter by lazy { AssistantChatAdapter() }
@@ -74,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         startService(Intent(this, AssistantService::class.java))
         bindService(Intent(this, AssistantService::class.java), serviceConnection, BIND_AUTO_CREATE)
         googlestt = GoogleServices(this, assets)
+        tvLanguage = findViewById(R.id.tvLanguage)
         ivSettings = findViewById(R.id.ivSettings)
         ivClear = findViewById(R.id.ivClear)
         ivStop = findViewById(R.id.ivStop)
@@ -93,6 +95,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
         ivClear.setOnClickListener {
+            messageStorage.clearMessages()
             assistantAdapter.items.clear()
             assistantAdapter.notifyDataSetChanged()
             val gptPromptFileName = "GPTPrompt.txt"
@@ -144,6 +147,7 @@ class MainActivity : AppCompatActivity() {
         }
         logger = LogUtil
         messageStorage = MessageStorage(this)
+        assistantAdapter.items.addAll(messageStorage.retrieveUserAssistantMessages())
         /*btnNewChatRoom = findViewById(R.id.btnNewChatRoom)
 
         btnNewChatRoom.setOnClickListener {
@@ -245,6 +249,7 @@ class MainActivity : AppCompatActivity() {
             addAction(RECORDING_STATE)
             addAction(ASSISTANT_RESPONSE_STATE)
         })
+        tvLanguage.text = "Language: ${mPreferences.getString("language", "Korean")}"
     }
 
     override fun onDestroy() {

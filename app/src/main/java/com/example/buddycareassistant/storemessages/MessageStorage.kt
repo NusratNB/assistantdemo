@@ -28,16 +28,14 @@ class MessageStorage(private val context: Context) {
             for (currentMessage in  existingMessages){
 //                val currentMessage = existingMessages[i]
                 stringBuilder.append(
-                    """
-                    |$currentMessage
-                    """.trimMargin()
+                    "$currentMessage\n"
                 )
                 Log.d("txtFile", "currentMessage: $currentMessage")
                 Log.d("txtFile", "string")
             }
         }
         messages.forEach { (user, message) ->
-            stringBuilder.append("UserStart $user UserEnd; AssistantStart $message AssistantEnd\n")
+            stringBuilder.append("\n$user\n$message\n")
         }
 
         try {
@@ -47,6 +45,50 @@ class MessageStorage(private val context: Context) {
 
         } catch (e: IOException) {
             e.printStackTrace()
+        }
+    }
+
+    fun retrieveUserAssistantMessages(): List<Pair<Boolean, String>> {
+        pathToSavingMessages = File(context.externalCacheDir?.absolutePath, "Messages")
+        if (!pathToSavingMessages.exists()){
+            pathToSavingMessages.mkdir()
+        }
+        val result = mutableListOf<Pair<Boolean, String>>()
+        val data = readTextFile()
+        var message = ""
+        var lastOneUser: Boolean? = null
+        data.forEach {
+            if (it.startsWith("User:")) {
+                lastOneUser = true
+                if (message != "")
+                    result.add(Pair(true, message))
+                message = ""
+                message += it.substring(startIndex = 5)
+            } else if (it.startsWith("Assistant:")) {
+                lastOneUser = false
+                if (message != "")
+                    result.add(Pair(false, message))
+                message = ""
+                message += it.substring(startIndex = 10)
+            } else {
+                message += it + if(message != "") "\n" else ""
+            }
+        }
+        if (message != "") {
+            if (lastOneUser == true) {
+                result.add(Pair(false, message))
+            } else if (lastOneUser == false) {
+                result.add(Pair(true, message))
+            }
+        }
+
+        return result
+    }
+
+    fun clearMessages() {
+        pathToSavingMessages = File(context.externalCacheDir?.absolutePath, "Messages")
+        if (pathToSavingMessages.exists()){
+            pathToSavingMessages.deleteRecursively()
         }
     }
 
