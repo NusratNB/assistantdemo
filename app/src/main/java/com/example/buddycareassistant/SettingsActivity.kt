@@ -19,7 +19,7 @@ class SettingsActivity: AppCompatActivity() {
     private val conversationalStyles = arrayOf("More Creative", "More Balanced", "More Precise")
     private val genders = arrayOf("Male", "Female")
 
-    private val pref by lazy { getSharedPreferences("assistant", MODE_PRIVATE) }
+    private val pref by lazy { getSharedPreferences("assistant_demo", MODE_PRIVATE) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
