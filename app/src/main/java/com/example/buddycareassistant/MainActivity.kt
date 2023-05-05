@@ -247,9 +247,9 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    override fun onPause() {
+    override fun onDestroy() {
         unregisterReceiver(uiReceiver)
-        super.onPause()
+        super.onDestroy()
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
