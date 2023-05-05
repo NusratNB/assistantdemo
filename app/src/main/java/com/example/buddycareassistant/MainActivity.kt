@@ -147,7 +147,7 @@ class MainActivity : AppCompatActivity() {
         }
         logger = LogUtil
         messageStorage = MessageStorage(this)
-        assistantAdapter.items.addAll(messageStorage.retrieveUserAssistantMessages())
+        assistantAdapter.items.addAll(messageStorage.retrieveUserAssistantMessages().reversed())
         /*btnNewChatRoom = findViewById(R.id.btnNewChatRoom)
 
         btnNewChatRoom.setOnClickListener {

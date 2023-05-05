@@ -35,7 +35,7 @@ class MessageStorage(private val context: Context) {
             }
         }
         messages.forEach { (user, message) ->
-            stringBuilder.append("\n$user\n$message\n")
+            stringBuilder.append("\n$message\n$user\n")
         }
 
         try {
