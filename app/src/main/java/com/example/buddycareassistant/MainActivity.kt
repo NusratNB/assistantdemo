@@ -4,9 +4,10 @@ import android.Manifest
 import android.content.*
 import android.content.pm.PackageManager
 import android.os.*
-import android.widget.Button
+import android.util.Log
+import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -14,10 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.buddycareassistant.bluetoothcontrol.BluetoothControlActivity
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
-import com.example.buddycareassistant.gpt3documentation.ParametersInfoActivity
-import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
 import com.example.buddycareassistant.service.AssistantService
 import com.example.buddycareassistant.storemessages.MessageStorage
 import com.example.buddycareassistant.utils.LogUtil
@@ -45,7 +43,8 @@ class MainActivity : AppCompatActivity() {
     private val assistantAdapter by lazy { AssistantChatAdapter() }
     private lateinit var ivSettings: ImageView
     private lateinit var ivClear: ImageView
-    private lateinit var ivBluetoothState: ImageView
+    private lateinit var ivStop: ImageView
+    private lateinit var startChat: FrameLayout
 
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
@@ -70,7 +69,6 @@ class MainActivity : AppCompatActivity() {
     //    @RequiresApi(Build.VERSION_CODES.S)
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main2)
         startService(Intent(this, AssistantService::class.java))
@@ -78,12 +76,19 @@ class MainActivity : AppCompatActivity() {
         googlestt = GoogleServices(this, assets)
         ivSettings = findViewById(R.id.ivSettings)
         ivClear = findViewById(R.id.ivClear)
-        ivBluetoothState = findViewById(R.id.ivBluetoothState)
+        ivStop = findViewById(R.id.ivStop)
         tvRecordingStatus = findViewById(R.id.tvRecordingStatus)
+        startChat = findViewById(R.id.startChat)
         rvAssistant = findViewById(R.id.rvChat)
         rvAssistant.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, true)
         rvAssistant.adapter = assistantAdapter
 
+        ivStop.setOnClickListener {
+            foregroundBleService?.stopPlayer()
+        }
+        startChat.setOnClickListener {
+            onNewIntent(Intent("android.intent.action.VOICE_COMMAND"))
+        }
         ivSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
@@ -261,6 +266,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun turnOnScreen() {
+        // turn on screen
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -270,16 +280,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
     inner class UIReceiver: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action.equals(RECORDING_STATE)) {
                 val isRecording = intent?.getBooleanExtra("isRecording", false) ?: false
                 if (isRecording) {
                     tvRecordingStatus.text = "Recording..."
+                    startChat.setBackgroundResource(R.drawable.bg_mic_recording)
                 } else {
                     tvRecordingStatus.text = ""
+                    startChat.setBackgroundResource(R.drawable.bg_mic)
                     val requestItem = Pair(false, "....")
                     assistantAdapter.items.add(0, requestItem)
                     assistantAdapter.notifyDataSetChanged()

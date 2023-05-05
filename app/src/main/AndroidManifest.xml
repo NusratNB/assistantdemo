@@ -79,10 +79,25 @@
         <activity android:name=".SettingsActivity"
             android:theme="@style/Theme.Settings"/>
 
+<!--        <activity android:name=".MainActivity2"-->
+<!--            android:theme="@style/Theme.Settings"/>-->
+
         <service android:foregroundServiceType="microphone"
             android:name=".service.AssistantService"/>
+
+        <receiver
+            android:name= ".DeviceAdmin"
+            android:label= "@string/app_name"
+            android:permission= "android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name= "android.app.device_admin"
+                android:resource= "@xml/policies" />
+            <intent-filter>
+                <action android:name= "android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+        
     </application>
-
-
-
+    
 </manifest>
