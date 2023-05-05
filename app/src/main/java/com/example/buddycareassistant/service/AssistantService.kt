@@ -35,6 +35,7 @@ open class AssistantService : Service() {
     private lateinit var mNotificationManager: NotificationManager
     private lateinit var mNotificationBuilder: NotificationCompat.Builder
     private lateinit var mPreferences: SharedPreferences
+    private lateinit var pref: SharedPreferences
     private lateinit var recorder: AudioRecorder
     private lateinit var audioManager: AudioManager
     private val time = Time()
@@ -51,6 +52,10 @@ open class AssistantService : Service() {
     private lateinit var messageStorage: MessageStorage
     private lateinit var googleServices: GoogleServices
     private var audioFilePath = ""
+    private var memory_quality = "Low"
+    private var language = "Korean"
+    private var conversational = "More Creative"
+    private var gender = "Male"
     private var mediaPlayer: MediaPlayer = MediaPlayer()
     private var mediaPlayerSilence: MediaPlayer = MediaPlayer()
     private var isMediaPlayerInitialized = true
@@ -70,6 +75,7 @@ open class AssistantService : Service() {
         googleServices = GoogleServices(this, assets)
         mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         mPreferences = getSharedPreferences("buddycare_assistant", MODE_PRIVATE)
+        pref = getSharedPreferences("assistant", MODE_PRIVATE)
         recorder = AudioRecorder(this)
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord")
         if (!pathToRecords.exists()) {
@@ -338,6 +344,11 @@ open class AssistantService : Service() {
             isMediaPlayerSilenceInitialized = false
         }
         playRecordStartedNotification()
+        val settings = getSettings()
+        memory_quality = settings["memory_quality"].toString()
+        language = settings["language"].toString()
+        conversational = settings["conversational"].toString()
+        gender = settings["gender"].toString()
         try {
             Handler().postDelayed({
                 startRecording()
@@ -372,7 +383,8 @@ open class AssistantService : Service() {
         val fileName = outputFile
         if (fileName.path.isNotEmpty()) {
             Thread {
-                val ttt = googleServices.getSTTText(fileName.path)
+                // ttt: Google STT result
+                val ttt = googleServices.getSTTText(fileName.path, language)
 //                Log.d(TAG, "Google STT result: $ttt")
                 logger.d(ctx, TAG, "Google STT result: $ttt")
                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
@@ -395,7 +407,7 @@ open class AssistantService : Service() {
                             logger.d(ctx, TAG, "pathToSavingAudio: $pathToSavingAudio")
                             logger.d(ctx, TAG, "audioFilePath, $audioFilePath")
 
-                            googleServices.googletts(audioFilePath, responseFromNaverClova)
+                            googleServices.googletts(audioFilePath, responseFromNaverClova,language, gender)
                             if (prevRecAudio.toString().isNotEmpty()){
                                 val ff = File(prevRecAudio)
                                 ff.delete()
@@ -410,14 +422,14 @@ open class AssistantService : Service() {
                             playAudio()
                         }
                     } else {
-                        var korToEng = googleServices.googleTranslatorKoreanToEnglish(ttt)
+                        var korToEng = googleServices.googleTranslatorKoreanToEnglish(ttt, language)
 
 //                        Log.d(TAG,"Korean to English translation: $korToEng" )
                         logger.d(ctx, TAG,"Korean to English translation: $korToEng")
                         val gpt3Settings = getGPT3Settings()
                         if (korToEng == "") {
                             korToEng = "I don't understand, can you repeat."
-                            val engToKor = googleServices.googleTranslatorEnglishToKorean(korToEng)
+                            val engToKor = googleServices.googleTranslatorEnglishToKorean(korToEng, language)
                             val time = Time()
                             time.setToNow()
                             audioFilePath =
@@ -429,7 +441,7 @@ open class AssistantService : Service() {
                             logger.d(ctx, TAG, "pathToSavingAudio $pathToSavingAudio")
                             logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
 
-                            googleServices.googletts(audioFilePath, engToKor)
+                            googleServices.googletts(audioFilePath, engToKor, language, gender)
 
 //                            if (prevRecAudio.isNotEmpty()){
 //                                val ff = File(prevRecAudio)
@@ -444,10 +456,11 @@ open class AssistantService : Service() {
                             playAudio()
                         } else {
                             googleServices.getResponseGPT3(gpt3Settings, korToEng) { responseFromGPT3 ->
+                                // engToKor: Google Translator result
                                 val engToKor =
-                                    googleServices.googleTranslatorEnglishToKorean(responseFromGPT3)
-                                val userMessage = "User:$korToEng"
-                                val gptMessage = "Assistant:$responseFromGPT3"
+                                    googleServices.googleTranslatorEnglishToKorean(responseFromGPT3, language)
+                                val userMessage = "User:$ttt"
+                                val gptMessage = "Assistant:$engToKor"
 //                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
                                 logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
 
@@ -470,7 +483,7 @@ open class AssistantService : Service() {
                                 logger.d(ctx, TAG, "pathToSavingAudio: $pathToSavingAudio")
                                 logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
 
-                                googleServices.googletts(audioFilePath, engToKor)
+                                googleServices.googletts(audioFilePath, engToKor, language, gender)
 //                                Log.d(TAG,"Google TTS file path: $audioFilePath")
                                 logger.d(ctx, TAG,"Google TTS file path: $audioFilePath")
 
@@ -544,6 +557,19 @@ open class AssistantService : Service() {
         bluetoothAdapter?.closeProfileProxy(BluetoothProfile.HEADSET, bluetoothHeadset)
 //        unregisterReceiver(bluetoothDisconnectReceiver)
     }
+
+    private fun getSettings():Map<String, String?>{
+        val memory_quality = pref.getString("memory_quality", "Low")
+        val language = pref.getString("language", "Korean")
+        val conversational = pref.getString("conversational", "More Creative")
+        val gender = pref.getString("gender", "Male")
+
+        val settings = mapOf("memory_quality" to memory_quality, "language" to language,
+                        "conversational" to conversational, "gender" to gender)
+
+        return settings
+    }
+
     private fun getGPT3Settings(): Map<String, String?> {
         val model = mPreferences.getString("model", "gpt-3.5-turbo")
         val max_tokens = mPreferences.getString("max_tokens", "200")

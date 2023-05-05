@@ -52,10 +52,13 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
     private val TIMEOUT_IN_SECONDS = 60
     private val messageStorage: MessageStorage = MessageStorage(context)
     private val logger = LogUtil
+    private var languageSTT = "ko-KR"
+    private var languageTTS = "ko-KR"
+    private var ttsGender = SsmlVoiceGender.FEMALE
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
 
 
-    fun getSTTText(audioURI: String): String {
+    fun getSTTText(audioURI: String, language:String): String {
 
         val audioInputStream = FileInputStream(audioURI)
         val audioBytes = audioInputStream.readBytes()
@@ -63,11 +66,17 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
             SpeechSettings.newBuilder()
                 .setCredentialsProvider { GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray())) }
                 .build())
+        if (language=="Korean"){
+            languageSTT = "ko-KR"
+        } else{
+            languageSTT = "en-US"
+        }
+
         val config =
             RecognitionConfig.newBuilder()
                 .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
                 .setSampleRateHertz(16000)
-                .setLanguageCode("ko-KR")
+                .setLanguageCode(languageSTT)
                 .build()
         val audio = RecognitionAudio.newBuilder()
             .setContent(ByteString.copyFrom(audioBytes))
@@ -90,7 +99,19 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         return transcription
     }
 
-    fun googletts(pathToAudio: String, inputText:String){
+    fun googletts(pathToAudio: String, inputText:String, language: String, gender: String){
+
+        languageTTS = if (language=="Korean"){
+            "ko-KR"
+        }else{
+            "en-US"
+        }
+
+        ttsGender = if (gender=="Female"){
+            SsmlVoiceGender.FEMALE
+        } else{
+            SsmlVoiceGender.MALE
+        }
 
         val transportChannelProvider = TextToSpeechSettings.defaultGrpcTransportProviderBuilder()
             .setMaxInboundMessageSize(1024 * 1024 * 100) // Set max message size to 100 MB
@@ -103,8 +124,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         )
         val input = SynthesisInput.newBuilder().setText(inputText).build()
         val voice = VoiceSelectionParams.newBuilder()
-            .setLanguageCode("ko-KR")
-            .setSsmlGender(SsmlVoiceGender.FEMALE)
+            .setLanguageCode(languageTTS)
+            .setSsmlGender(ttsGender)
             .build()
 
         val audioConfig = AudioConfig.newBuilder()
@@ -120,20 +141,28 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         speechClient.close()
     }
 
-    fun googleTranslatorKoreanToEnglish(inputText: String): String{
+    fun googleTranslatorKoreanToEnglish(inputText: String, language: String): String{
 
-        inputStream = assetManager.open(oauthKeyName)
-        val myCredentials = GoogleCredentials.fromStream(inputStream)
+        var  resultText = ""
 
-        val translateOptions = TranslateOptions.newBuilder().setCredentials(myCredentials).build()
+        if (language=="Korean"){
+            inputStream = assetManager.open(oauthKeyName)
+            val myCredentials = GoogleCredentials.fromStream(inputStream)
 
-        val translate = translateOptions.service
-        val translation: Translation = translate.translate(
-            inputText,
-            Translate.TranslateOption.sourceLanguage("ko"),
-            Translate.TranslateOption.targetLanguage("en")
-        )
-        val resultText =  translation.translatedText
+            val translateOptions = TranslateOptions.newBuilder().setCredentials(myCredentials).build()
+
+            val translate = translateOptions.service
+            val translation: Translation = translate.translate(
+                inputText,
+                Translate.TranslateOption.sourceLanguage("ko"),
+                Translate.TranslateOption.targetLanguage("en")
+            )
+            resultText =  translation.translatedText
+        } else {
+            resultText = inputText
+        }
+
+
 
 
         return resultText
@@ -147,23 +176,29 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         }
     }
 
-    fun googleTranslatorEnglishToKorean(inputText: String): String{
+    fun googleTranslatorEnglishToKorean(inputText: String, language: String): String{
 
-        inputStream = assetManager.open(oauthKeyName)
-        val myCredentials = GoogleCredentials.fromStream(inputStream)
+        var resultText = ""
 
-        val translateOptions = TranslateOptions.newBuilder().setCredentials(myCredentials).build()
+        if (language == "Korean"){
+            inputStream = assetManager.open(oauthKeyName)
+            val myCredentials = GoogleCredentials.fromStream(inputStream)
 
-        val translate = translateOptions.service
-        val translation: Translation = translate.translate(
-            inputText,
-            Translate.TranslateOption.sourceLanguage("en"),
-            Translate.TranslateOption.targetLanguage("ko")
-        )
+            val translateOptions = TranslateOptions.newBuilder().setCredentials(myCredentials).build()
 
-        val translatedText = translation.translatedText
-        val tempString = "&quot;"
-        val resultText = removeSubstring(tempString, translatedText)
+            val translate = translateOptions.service
+            val translation: Translation = translate.translate(
+                inputText,
+                Translate.TranslateOption.sourceLanguage("en"),
+                Translate.TranslateOption.targetLanguage("ko")
+            )
+
+            val translatedText = translation.translatedText
+            val tempString = "&quot;"
+            resultText = removeSubstring(tempString, translatedText)
+        } else{
+            resultText = inputText
+        }
 
         return resultText
     }
