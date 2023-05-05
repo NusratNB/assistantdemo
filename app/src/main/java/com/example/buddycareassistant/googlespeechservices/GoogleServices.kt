@@ -112,6 +112,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         } else{
             SsmlVoiceGender.MALE
         }
+        logger.d(context, TAG, "gender: $gender language: $language Voice: $ttsGender")
 
         val transportChannelProvider = TextToSpeechSettings.defaultGrpcTransportProviderBuilder()
             .setMaxInboundMessageSize(1024 * 1024 * 100) // Set max message size to 100 MB
@@ -123,21 +124,40 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 .build()
         )
         val input = SynthesisInput.newBuilder().setText(inputText).build()
-        val voice = VoiceSelectionParams.newBuilder()
-            .setLanguageCode(languageTTS)
-            .setSsmlGender(ttsGender)
-            .build()
 
-        val audioConfig = AudioConfig.newBuilder()
-            .setAudioEncoding(AudioEncoding.MP3).build()
+        if (gender=="Female"){
+            val voice = VoiceSelectionParams.newBuilder()
+                .setLanguageCode(languageTTS)
+                .setSsmlGender(SsmlVoiceGender.FEMALE)
+                .setSsmlGenderValue(SsmlVoiceGender.FEMALE_VALUE)
+                .build()
+            val audioConfig = AudioConfig.newBuilder()
+                .setAudioEncoding(AudioEncoding.MP3).build()
 
-        val response = speechClient.synthesizeSpeech(input, voice, audioConfig)
+            val response = speechClient.synthesizeSpeech(input, voice, audioConfig)
+            val audioContents = response.audioContent
+            FileOutputStream(pathToAudio).use { out ->
+                out.write(audioContents.toByteArray())
+                out.close()
+            }
+        } else{
+            val voice = VoiceSelectionParams.newBuilder()
+                .setLanguageCode(languageTTS)
+                .setSsmlGender(SsmlVoiceGender.MALE)
+                .setSsmlGenderValue(SsmlVoiceGender.MALE_VALUE)
+                .build()
 
-        val audioContents = response.audioContent
-        FileOutputStream(pathToAudio).use { out ->
-            out.write(audioContents.toByteArray())
-            out.close()
+            val audioConfig = AudioConfig.newBuilder()
+                .setAudioEncoding(AudioEncoding.MP3).build()
+
+            val response = speechClient.synthesizeSpeech(input, voice, audioConfig)
+            val audioContents = response.audioContent
+            FileOutputStream(pathToAudio).use { out ->
+                out.write(audioContents.toByteArray())
+                out.close()
+            }
         }
+
         speechClient.close()
     }
 
@@ -203,7 +223,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         return resultText
     }
 
-    fun getResponseGPT3(gpt3Settings: Map<String, String?>, inputText: String, callback: (String) -> Unit){
+    fun getResponseGPT3(gpt3Settings: Map<String, String?>, inputText: String, memoryQuality: String, callback: (String) -> Unit){
         val API_KEY = "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"
         val host = "api.openai.com"
 
@@ -217,7 +237,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         val frequency_penalty = gpt3Settings["frequency_penalty"]?.toFloat()
         val presence_penalty = gpt3Settings["presence_penalty"]?.toFloat()
         val tokensInfo = gpt3Settings["tokensCheckBox"]?.toBoolean()
-        val chatWindowSize = gpt3Settings["chatWindowSize"]?.toInt()
+        var chatWindowSize = gpt3Settings["chatWindowSize"]?.toInt()
         if (logprobs != "null"){
             logprobs?.toInt()
         }
@@ -239,11 +259,23 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         promptJsonInit.put("frequency_penalty", frequency_penalty)
         promptJsonInit.put("presence_penalty", presence_penalty)
 
+        chatWindowSize = when (memoryQuality) {
+            "Low" -> {
+                5
+            }
+            "Medium" -> {
+                15
+            }
+            else -> 30
+        }
+
         val newSlicedChatMessages = JSONArray()
         val tempPrevMessages = promptJsonInit.getJSONArray("messages")
-        Log.d("ChatTest", "tempPrevMessages $tempPrevMessages")
-        Log.d("ChatTest", "tempPrevMessages length: ${tempPrevMessages.length()}; chatWindowSize: $chatWindowSize")
-        if ((tempPrevMessages.length() - 1) > (2*chatWindowSize!!)){
+//        Log.d("ChatTest", "tempPrevMessages $tempPrevMessages")
+        logger.d(context, TAG, "tempPrevMessages $tempPrevMessages")
+        logger.d(context, TAG, "tempPrevMessages length: ${tempPrevMessages.length()}; memoryQuality: $memoryQuality   chatWindowSize: $chatWindowSize")
+//        Log.d("ChatTest", "tempPrevMessages length: ${tempPrevMessages.length()}; memoryQuality: $memoryQuality   chatWindowSize: $chatWindowSize")
+        if ((tempPrevMessages.length() - 1) > (2* chatWindowSize)){
             val startIndex = tempPrevMessages.length() - 1 - (2 * chatWindowSize)
             newSlicedChatMessages.put(tempPrevMessages.get(0))
             for ( i in startIndex until tempPrevMessages.length()){
@@ -333,7 +365,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 //                    Log.d(TAG, "GPT3 content: $content")
                     logger.d(context, TAG, "GPT3 content: $content")
                 } catch (e: Exception) {
-                    Log.d(TAG, "GPT3 Error: " + e.stackTraceToString() )
+//                    Log.d(TAG, "GPT3 Error: " + e.stackTraceToString() )
                     logger.d(context, TAG, "GPT3 Error: " + e.stackTraceToString() )
                 }
                 callback(responseGPT3)
@@ -365,7 +397,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
             "includeProbs": false
                 }
         """
-        Log.d(TAG, "Naver Clova completionRequest: $completionRequest")
+//        Log.d(TAG, "Naver Clova completionRequest: $completionRequest")
+        logger.d(context, TAG, "Naver Clova completionRequest: $completionRequest")
 
         val url = "https://$host/testapp/v1/tasks/n2av10my/completions/LK-B"
 
@@ -384,7 +417,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Request failed: $e")
+//                Log.e(TAG, "Request failed: $e")
+                logger.e(context, TAG, "Request failed: $e")
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -392,7 +426,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 val responseMessage = response.message
                 val responseBody = response.body?.source()
                 if (responseCode != 200 || responseBody == null) {
-                    Log.e(TAG, "Error: $responseCode $responseMessage: $responseBody")
+//                    Log.e(TAG, "Error: $responseCode $responseMessage: $responseBody")
+                    logger.e(context, TAG, "Error: $responseCode $responseMessage: $responseBody")
 
                 }
                 try {

@@ -455,7 +455,7 @@ open class AssistantService : Service() {
                             })
                             playAudio()
                         } else {
-                            googleServices.getResponseGPT3(gpt3Settings, korToEng) { responseFromGPT3 ->
+                            googleServices.getResponseGPT3(gpt3Settings, korToEng, memory_quality) { responseFromGPT3 ->
                                 // engToKor: Google Translator result
                                 val engToKor =
                                     googleServices.googleTranslatorEnglishToKorean(responseFromGPT3, language)
