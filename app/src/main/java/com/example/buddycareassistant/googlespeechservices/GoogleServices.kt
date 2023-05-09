@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.util.Log
 import com.example.buddycareassistant.storemessages.MessageStorage
 import com.example.buddycareassistant.utils.LogUtil
+import com.example.buddycareassistant.utils.LoudnessNormalizer
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
@@ -22,6 +23,8 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.concurrent.TimeUnit
 
 
@@ -55,13 +58,25 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
     private var languageSTT = "ko-KR"
     private var languageTTS = "ko-KR"
     private var ttsGender = SsmlVoiceGender.FEMALE
+    val loudnessNormalizer = LoudnessNormalizer()
+    private val loudnessThreshold = -16f
+    private val increaseVolume = 5
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
 
 
-    fun getSTTText(audioURI: String, language:String): String {
+    fun getSTTText(audioURI: String, language:String, recordedChangedAudioName:String, pathToRecords:File): String {
 
         val audioInputStream = FileInputStream(audioURI)
         val audioBytes = audioInputStream.readBytes()
+        logger.i(context, TAG, "input audio path: $audioURI")
+        val audioFloats = byteToInt(audioBytes)
+//        val audioNormalizedFloatArray = increaseAudioVolume(audioFloats)// loudnessNormalizer.audioNormalization(loudnessThreshold, audioFloats)
+        val audioNormalizedByteArray = shortArrayToByteArray(audioFloats)
+
+        Thread{
+            saveByteArrayAsPcmFile(context, audioNormalizedByteArray, File(pathToRecords, recordedChangedAudioName))
+        }.start()
+
         val speechClient = SpeechClient.create(
             SpeechSettings.newBuilder()
                 .setCredentialsProvider { GoogleCredentials.fromStream(ByteArrayInputStream(oauthKey.toByteArray())) }
@@ -79,7 +94,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 .setLanguageCode(languageSTT)
                 .build()
         val audio = RecognitionAudio.newBuilder()
-            .setContent(ByteString.copyFrom(audioBytes))
+            .setContent(ByteString.copyFrom(audioNormalizedByteArray))
             .build()
 
         val response = speechClient.recognize(config, audio)
@@ -99,6 +114,48 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         return transcription
     }
 
+    private fun byteToInt(bytes: ByteArray): IntArray {
+        val slicedData = byteArrayToShortArray(bytes) //byteArrayToIntArray(bytes)
+//        for (i in bytes.indices){
+//            slicedData[i] = bytes[i].toInt()
+//            Log.d("shortData", slicedData[i].toString())
+//        }
+        val increasedVolume = slicedData.map { (it*increaseVolume).toInt() }
+        val finalAudio = IntArray(increasedVolume.size)
+        for(i in increasedVolume.indices){
+            var currentElement = increasedVolume[i]
+            if (currentElement<-32768){
+                currentElement = -32768
+            } else if (currentElement>(32767)){
+                currentElement = 32767
+            }
+            Log.d("currentElementttt", currentElement.toString())
+            finalAudio[i] = currentElement
+        }
+        return finalAudio
+    }
+
+    fun byteArrayToShortArray(byteArray: ByteArray): IntArray {
+        val buffer = ByteBuffer.wrap(byteArray).order(ByteOrder.LITTLE_ENDIAN)
+        val shortArray = IntArray(byteArray.size / 2)
+
+        for (i in shortArray.indices) {
+            shortArray[i] = buffer.short.toInt()
+        }
+
+        return shortArray
+    }
+
+    fun shortArrayToByteArray(intArray: IntArray): ByteArray {
+        val buffer = ByteBuffer.allocate(intArray.size * 2).order(ByteOrder.LITTLE_ENDIAN)
+
+        for (i in intArray.indices) {
+            buffer.putShort(intArray[i].toShort())
+        }
+
+        return buffer.array()
+    }
+
     fun googletts(pathToAudio: String, inputText:String, language: String, gender: String){
 
         languageTTS = if (language=="Korean"){
@@ -106,13 +163,6 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         }else{
             "en-US"
         }
-
-//        ttsGender = if (gender=="Female"){
-//            SsmlVoiceGender.FEMALE
-//        } else{
-//            SsmlVoiceGender.MALE
-//        }
-
 
         val transportChannelProvider = TextToSpeechSettings.defaultGrpcTransportProviderBuilder()
             .setMaxInboundMessageSize(1024 * 1024 * 100) // Set max message size to 100 MB
@@ -160,6 +210,16 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 
         speechClient.close()
     }
+    private fun saveByteArrayAsPcmFile(context: Context, byteArray: ByteArray, fileName: File) {
+        // Create a File instance with the desired path and file name
+        val file = File(fileName.path)
+
+        // Use a FileOutputStream to write the ByteArray to the file
+        FileOutputStream(file).use { fos ->
+            fos.write(byteArray)
+        }
+    }
+
 
     fun googleTranslatorKoreanToEnglish(inputText: String, language: String): String{
 
@@ -181,9 +241,6 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         } else {
             resultText = inputText
         }
-
-
-
 
         return resultText
     }

@@ -68,6 +68,7 @@ open class AssistantService : Service() {
     var isNeverClova: Boolean = false
     private lateinit var ctx: Context
     private lateinit var logger: LogUtil
+    private var recordedChangedAudioName = ""
 
     override fun onCreate() {
         super.onCreate()
@@ -262,6 +263,7 @@ open class AssistantService : Service() {
         time.setToNow()
         val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
         outputFile = File(pathToRecords, audioName)
+        recordedChangedAudioName = "changed_$audioName"
         recorder.start(outputFile)
         isRecordingAvailable = false
     }
@@ -384,7 +386,7 @@ open class AssistantService : Service() {
         if (fileName.path.isNotEmpty()) {
             Thread {
                 // ttt: Google STT result
-                val ttt = googleServices.getSTTText(fileName.path, language)
+                val ttt = googleServices.getSTTText(fileName.path, language, recordedChangedAudioName, pathToRecords)
 //                Log.d(TAG, "Google STT result: $ttt")
                 logger.d(ctx, TAG, "Google STT result: $ttt")
                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {

@@ -17,12 +17,12 @@ class AudioRecorder(private val ctx: Context) {
     private val logger = LogUtil
 
     private val audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION
-        private val sampleRate = 16000
-        private val channelConfig = AudioFormat.CHANNEL_IN_MONO
-        private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
+    private val sampleRate = 16000
+    private val channelConfig = AudioFormat.CHANNEL_IN_MONO
+    private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
 
-        private var audioRecord: AudioRecord? = null
-        private var isRecording = false
+    private var audioRecord: AudioRecord? = null
+    private var isRecording = false
 
 
 
