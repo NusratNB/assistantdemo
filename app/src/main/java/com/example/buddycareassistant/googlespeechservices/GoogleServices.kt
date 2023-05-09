@@ -135,7 +135,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         return finalAudio
     }
 
-    fun byteArrayToShortArray(byteArray: ByteArray): IntArray {
+    private fun byteArrayToShortArray(byteArray: ByteArray): IntArray {
         val buffer = ByteBuffer.wrap(byteArray).order(ByteOrder.LITTLE_ENDIAN)
         val shortArray = IntArray(byteArray.size / 2)
 
@@ -146,7 +146,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         return shortArray
     }
 
-    fun shortArrayToByteArray(intArray: IntArray): ByteArray {
+    private fun shortArrayToByteArray(intArray: IntArray): ByteArray {
         val buffer = ByteBuffer.allocate(intArray.size * 2).order(ByteOrder.LITTLE_ENDIAN)
 
         for (i in intArray.indices) {
