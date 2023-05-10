@@ -26,6 +26,7 @@ import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.TimeUnit
+import kotlin.math.absoluteValue
 
 
 class GoogleServices(val context: Context, private val assetManager: AssetManager ) {
@@ -60,7 +61,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
     private var ttsGender = SsmlVoiceGender.FEMALE
     val loudnessNormalizer = LoudnessNormalizer()
     private val loudnessThreshold = -16f
-    private val increaseVolume = 5
+    private var increaseVolumeFactor = 1
 //    val credentials = GoogleCredentials.fromJson(oauthKey)
 
 
@@ -120,7 +121,10 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 //            slicedData[i] = bytes[i].toInt()
 //            Log.d("shortData", slicedData[i].toString())
 //        }
-        val increasedVolume = slicedData.map { (it*increaseVolume).toInt() }
+        val maxValueOfAudio = slicedData.map {   it.absoluteValue }.maxOf { it }
+        increaseVolumeFactor = (0.7 * (32767/maxValueOfAudio)).toInt()
+        logger.d(context, TAG, "Recorded audio increasing factor: $increaseVolumeFactor")
+        val increasedVolume = slicedData.map { (it*increaseVolumeFactor) }
         val finalAudio = IntArray(increasedVolume.size)
         for(i in increasedVolume.indices){
             var currentElement = increasedVolume[i]
@@ -129,7 +133,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
             } else if (currentElement>(32767)){
                 currentElement = 32767
             }
-            Log.d("currentElementttt", currentElement.toString())
+
             finalAudio[i] = currentElement
         }
         return finalAudio
