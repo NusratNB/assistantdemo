@@ -36,9 +36,6 @@ class AudioRecorder(private val ctx: Context) {
             logger.d(ctx, TAG, "Recording is started.")
             audioRecord?.startRecording()
         }
-
-//        Log.d("scoTest ", "AudioRecorder file path $outputFile")
-
         isRecording = true
         Thread {
             writeAudioDataToFile(outputFile)
@@ -47,7 +44,7 @@ class AudioRecorder(private val ctx: Context) {
 
     fun stop() {
         audioRecord?.stop()
-//        audioRecord?.release()
+        audioRecord?.release()
         audioRecord = null
         isRecording = false
         logger.i(ctx, TAG, "Record has been stopped")
