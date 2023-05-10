@@ -2,11 +2,9 @@ package com.example.buddycareassistant.googlespeechservices
 
 import android.content.Context
 import android.content.res.AssetManager
-import android.media.MediaPlayer
 import android.util.Log
 import com.example.buddycareassistant.storemessages.MessageStorage
 import com.example.buddycareassistant.utils.LogUtil
-import com.example.buddycareassistant.utils.LoudnessNormalizer
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.speech.v1.RecognitionAudio
 import com.google.cloud.speech.v1.RecognitionConfig
@@ -52,17 +50,12 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
     private val oauthKeyName = "credentials/caremeta-daea7ac2a8c7.json"
     private var inputStream = assetManager.open(oauthKeyName)
     private val oauthKey = readFromInputStream(inputStream)
-    private val mediaPlayer: MediaPlayer = MediaPlayer()
-    private val TIMEOUT_IN_SECONDS = 60
+    private val TIMEOUT_IN_SECONDS: Int = 60
     private val messageStorage: MessageStorage = MessageStorage(context)
     private val logger = LogUtil
     private var languageSTT = "ko-KR"
     private var languageTTS = "ko-KR"
-    private var ttsGender = SsmlVoiceGender.FEMALE
-    val loudnessNormalizer = LoudnessNormalizer()
-    private val loudnessThreshold = -16f
     private var increaseVolumeFactor = 1
-//    val credentials = GoogleCredentials.fromJson(oauthKey)
 
 
     fun getSTTText(audioURI: String, language:String, recordedChangedAudioName:String, pathToRecords:File): String {
