@@ -51,7 +51,7 @@ class SettingsActivity: AppCompatActivity() {
         spMemoryQuality.setSelection(memoryQualities.indexOf(pref.getString("memory_quality", "Low")))
         spLanguage.setSelection(languages.indexOf(pref.getString("language", "Korean")))
         spConversationalStyle.setSelection(conversationalStyles.indexOf(pref.getString("conversational", "More Creative")))
-        spGender.setSelection(genders.indexOf(pref.getString("gender", "Male")))
+        spGender.setSelection(genders.indexOf(pref.getString("gender", "Female")))
 
         btnSave.setOnClickListener {
             pref.edit()

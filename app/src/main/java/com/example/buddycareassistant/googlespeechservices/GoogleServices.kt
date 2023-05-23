@@ -3,6 +3,7 @@ package com.example.buddycareassistant.googlespeechservices
 import android.content.Context
 import android.content.res.AssetManager
 import android.util.Log
+import android.widget.Toast
 import com.example.buddycareassistant.storemessages.MessageStorage
 import com.example.buddycareassistant.utils.LogUtil
 import com.google.auth.oauth2.GoogleCredentials
@@ -55,7 +56,7 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
     private val logger = LogUtil
     private var languageSTT = "ko-KR"
     private var languageTTS = "ko-KR"
-    private var increaseVolumeFactor = 1
+    private var increaseVolumeFactor = 1f
 
 
     fun getSTTText(audioURI: String, language:String, recordedChangedAudioName:String, pathToRecords:File): String {
@@ -115,12 +116,12 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
 //            Log.d("shortData", slicedData[i].toString())
 //        }
         val maxValueOfAudio = slicedData.map {   it.absoluteValue }.maxOf { it }
-        increaseVolumeFactor = (0.7 * (32767/maxValueOfAudio)).toInt()
+        increaseVolumeFactor = (0.7 * (32767/maxValueOfAudio)).toFloat()
         logger.d(context, TAG, "Recorded audio increasing factor: $increaseVolumeFactor")
         val increasedVolume = slicedData.map { (it*increaseVolumeFactor) }
         val finalAudio = IntArray(increasedVolume.size)
         for(i in increasedVolume.indices){
-            var currentElement = increasedVolume[i]
+            var currentElement = increasedVolume[i].toInt()
             if (currentElement<-32768){
                 currentElement = -32768
             } else if (currentElement>(32767)){
@@ -172,7 +173,9 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
         )
         val input = SynthesisInput.newBuilder().setText(inputText).build()
 
-        if (gender=="Female"){
+        if (languageTTS == "ko-KR"){
+                languageTTS = "ko-KR"
+
             val voice = VoiceSelectionParams.newBuilder()
                 .setLanguageCode(languageTTS)
                 .setSsmlGenderValue(SsmlVoiceGender.FEMALE_VALUE)
@@ -187,7 +190,8 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 out.close()
             }
             logger.d(context, TAG, "gender: $gender language: $language ")
-        } else if (gender == "Male"){
+        } else if (languageTTS == "en-US"){
+
             val voice = VoiceSelectionParams.newBuilder()
                 .setLanguageCode(languageTTS)
                 .setSsmlGenderValue(SsmlVoiceGender.MALE_VALUE)

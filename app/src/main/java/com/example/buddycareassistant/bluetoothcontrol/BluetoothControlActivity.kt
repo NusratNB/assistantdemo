@@ -50,7 +50,7 @@ class BluetoothControlActivity : AppCompatActivity() {
             pathToRecords.mkdir()
         }
 
-        audioRecorder = AudioRecorder(this)
+//        audioRecorder = AudioRecorder(this)
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         btnConnectBluetooth = findViewById(R.id.btnConnectBluetooth)
         btnDisconnectBluetooth = findViewById(R.id.btnDisconnectBluetooth)
@@ -159,7 +159,7 @@ class BluetoothControlActivity : AppCompatActivity() {
             btnSCOStartRecord.isEnabled = true
             // Stop Media recorder
 //            speechRecognizer.stopListening()
-            audioRecorder.stop()
+//            audioRecorder.stop()
         }
         try {
             this.unregisterReceiver(mBluetoothScoReceiver)
@@ -185,7 +185,7 @@ class BluetoothControlActivity : AppCompatActivity() {
                 time.setToNow()
                 val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
                 outputFile = File(pathToRecords, audioName)
-                audioRecorder.start(outputFile)
+//                audioRecorder.start(outputFile)
 
 //                speechRecognizer.startListening(speechRecognizerIntent)
             } else if (AudioManager.SCO_AUDIO_STATE_DISCONNECTED == state) {

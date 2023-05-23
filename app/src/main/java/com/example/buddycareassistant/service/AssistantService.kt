@@ -28,6 +28,9 @@ import com.example.buddycareassistant.storemessages.MessageStorage
 import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 import java.io.IOException
+import ai.picovoice.cobra.*
+import android.util.Log
+import java.util.LinkedList
 
 
 open class AssistantService : Service() {
@@ -36,7 +39,7 @@ open class AssistantService : Service() {
     private lateinit var mNotificationBuilder: NotificationCompat.Builder
     private lateinit var mPreferences: SharedPreferences
     private lateinit var pref: SharedPreferences
-    private lateinit var recorder: AudioRecorder
+    private var recorder: AudioRecorder? = null
     private lateinit var audioManager: AudioManager
     private val time = Time()
     lateinit var outputFile: File
@@ -56,8 +59,8 @@ open class AssistantService : Service() {
     private var language = "Korean"
     private var conversational = "More Creative"
     private var gender = "Male"
-    private var mediaPlayer: MediaPlayer = MediaPlayer()
     private var mediaPlayerSilence: MediaPlayer = MediaPlayer()
+    private var mediaPlayerResponse: MediaPlayer = MediaPlayer()
     private var isMediaPlayerInitialized = true
     private var isMediaPlayerSilenceInitialized = true
     private val BEGINNING_ALERT = "alerts/Beginning_alt.mp3"
@@ -69,7 +72,10 @@ open class AssistantService : Service() {
     private lateinit var ctx: Context
     private lateinit var logger: LogUtil
     private var recordedChangedAudioName = ""
-
+    private lateinit var cobraVAD: Cobra
+    private val cobraAccessKey = "pZNnAfYBzFJPPyNrSVx4KW5T8S7sRc1uIAlrUkf8LUlnzLUkAGlt+g=="
+    private var lastMuteTime: Long = 0
+    private val vadQueue = LinkedList<Float>()
     override fun onCreate() {
         super.onCreate()
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -77,7 +83,7 @@ open class AssistantService : Service() {
         mNotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         mPreferences = getSharedPreferences("buddycare_assistant", MODE_PRIVATE)
         pref = getSharedPreferences("assistant_demo", MODE_PRIVATE)
-        recorder = AudioRecorder(this)
+
         pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord")
         if (!pathToRecords.exists()) {
             pathToRecords.mkdir()
@@ -89,10 +95,12 @@ open class AssistantService : Service() {
         }
         ctx = this
         logger = LogUtil
-
-
-
-
+        cobraVAD = Cobra(cobraAccessKey)
+        recorder = AudioRecorder(this, cobraVAD) {probablity ->
+            vadQueue.addFirst(probablity)
+            if (vadQueue.size > 100)
+                checkSilence()
+        }
         val filterBluetoothConnection = IntentFilter().apply {
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
@@ -105,6 +113,16 @@ open class AssistantService : Service() {
         setupBluetoothHeadset()
         val filter = IntentFilter(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
         registerReceiver(AudioStateReceiver(), filter)
+    }
+
+    private fun checkSilence() {
+        val elements = vadQueue.slice(IntRange(0, 100))
+        var mins = 0
+        elements.forEach { if (it < 0.25f) mins ++ }
+        if (mins > 80) {
+            vadQueue.clear()
+            stopRecordingAndExecuteAssistantHelperFunc()
+        }
     }
 
     fun setupBluetoothHeadset() {
@@ -136,39 +154,18 @@ open class AssistantService : Service() {
             }
         }
     }
-
-//    private val bluetoothDisconnectReceiver = object : BroadcastReceiver() {
-//        override fun onReceive(context: Context, intent: Intent) {
-//            val action = intent.action
-//            if (BluetoothDevice.ACTION_ACL_DISCONNECTED == action || BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED == action) {
-//                Log.d(TAG, "Device is disconnected")
-//                handleDisconnection()
-//                val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-//                if (device != null && deviceBluetooth != null && device.address == deviceBluetooth?.address) {
-////                    handleDisconnection()
-//                }
-//            }
-//        }
-//    }
-
-
     inner class AudioStateReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED) {
                 val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
                 logger.d(ctx, TAG, "BluetoothHeadset current state: $state")
-                if (state == BluetoothHeadset.STATE_AUDIO_CONNECTED) {
-                    if (isRecordingAvailable) {
-//                        Log.i(TAG, "isRecordingAvailable status: $isRecordingAvailable")
-                        logger.i(ctx, TAG, "isRecordingAvailable status: $isRecordingAvailable")
-
-//                        startVoiceCommand()
-//                        isRecordingAvailable = false
-                    }
-                } else if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED ) {
+                if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED ) {
                     if (!isRecordingAvailable) {
-                        stopRecordingAndPlayNotification()
+                        stopRecording()
                     }
+                    releaseMediaPlayer()
+                    closeChannel()
+
                 }
             }
         }
@@ -198,30 +195,35 @@ open class AssistantService : Service() {
             if (audioFilePath.isNotEmpty()) {
                 val assetManager = this.assets
                 val firstFileDescriptor = assetManager.openFd("silenceShort.mp3")
-                if (!isMediaPlayerInitialized) {
-                    mediaPlayer = MediaPlayer()
-                }
-                if (!isMediaPlayerSilenceInitialized) {
-                    mediaPlayerSilence = MediaPlayer()
-                }
-                mediaPlayer.reset()
-                mediaPlayer.setDataSource(
+                checkMediaPlayersIsInitialized()
+                mediaPlayerSilence.reset()
+                mediaPlayerSilence.setDataSource(
                     firstFileDescriptor.fileDescriptor,
                     firstFileDescriptor.startOffset,
                     firstFileDescriptor.length
                 )
-                mediaPlayer.prepare()
-                mediaPlayer.setOnCompletionListener {
+                mediaPlayerSilence.prepare()
+                mediaPlayerSilence.setOnCompletionListener {
                     val file = File(audioFilePath)
                     if (file.exists()) {
-                        mediaPlayerSilence.reset()
-                        mediaPlayerSilence.setDataSource(audioFilePath)
-                        mediaPlayerSilence.prepare()
-                        mediaPlayerSilence.start()
+                        mediaPlayerResponse.reset()
+                        mediaPlayerResponse.setDataSource(audioFilePath)
+                        mediaPlayerResponse.setAudioAttributes(AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                            .build())
+                        mediaPlayerResponse.setOnPreparedListener {
+                            mediaPlayerResponse.start()
+                            Log.d("TestingPhoneProfile", "MediaPlayer started")
+                        }
+                        mediaPlayerResponse.prepareAsync()
+                        mediaPlayerResponse.setOnCompletionListener {
+                            startRecording()
+                        }
                         logger.i(ctx, TAG, "Playing audio in path: $audioFilePath")
                     }
                 }
-                mediaPlayer.start()
+                mediaPlayerSilence.start()
                 logger.i(ctx, TAG, "Playing silence")
                 playingAvailable = false
 
@@ -237,39 +239,53 @@ open class AssistantService : Service() {
         }
     }
 
+
+
     fun stopPlayer() {
-        if (mediaPlayer.isPlaying){
-            mediaPlayer.stop()
-            mediaPlayer.reset()
-            isMediaPlayerInitialized = false
-        }
         if (mediaPlayerSilence.isPlaying){
             mediaPlayerSilence.stop()
             mediaPlayerSilence.reset()
+            isMediaPlayerInitialized = false
+        }
+        if (mediaPlayerResponse.isPlaying){
+            mediaPlayerResponse.stop()
+            mediaPlayerResponse.reset()
             isMediaPlayerSilenceInitialized = false
         }
+    }
 
+    private fun releaseMediaPlayer(){
+        stopPlayer()
+        mediaPlayerSilence.release()
+        mediaPlayerResponse.release()
+        isMediaPlayerSilenceInitialized = false
+        isMediaPlayerInitialized = false
     }
 
     private fun startRecording() {
         sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
             putExtra("isRecording", true)
         })
-        ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
-        bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
         time.setToNow()
         val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
         outputFile = File(pathToRecords, audioName)
         recordedChangedAudioName = "changed_$audioName"
-        recorder.start(outputFile)
+        recorder?.start(outputFile)
         isRecordingAvailable = false
     }
 
     private fun stopRecording() {
+        recorder?.stop()
+        isRecordingAvailable = true
+    }
+
+    private fun closeChannel(){
         ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
         bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
-        recorder.stop()
-        isRecordingAvailable = true
+    }
+    private fun openChannel(){
+        ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
+        bluetoothHeadset?.startVoiceRecognition(deviceBluetooth)
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -278,29 +294,45 @@ open class AssistantService : Service() {
 //        Log.d("action in foreground: ", "$action")
         logger.d(ctx, "action in foreground: ", "$action")
         if (action == START_ACTION) {
+            openChannel()
             startVoiceCommand()
         } else if (action == STOP_ACTION) {
+            closeChannel()
             stopRecording()
         } else if (action == START_VOICE_COMMAND_ACTION) {
+            openChannel()
             startVoiceCommand()
         }
         return START_NOT_STICKY
     }
     private fun playRecordStartedNotification(){
-        if (mediaPlayer.isPlaying) {
-            mediaPlayer.stop()
-            mediaPlayer.reset()
-            isMediaPlayerInitialized = false
-        }
         if (mediaPlayerSilence.isPlaying) {
             mediaPlayerSilence.stop()
             mediaPlayerSilence.reset()
+            isMediaPlayerInitialized = false
+        }
+        if (mediaPlayerResponse.isPlaying) {
+            mediaPlayerResponse.stop()
+            mediaPlayerResponse.reset()
             isMediaPlayerSilenceInitialized = false
         }
 
+        /*
+        * mediaPlayerResponse.setAudioAttributes(AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                            .build())*/
+
+        val audioAttributes = AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+            .build()
+
         soundPool = SoundPool.Builder()
+            .setAudioAttributes(audioAttributes)
             .setMaxStreams(1)
             .build()
+
 
         soundPool.setOnLoadCompleteListener { soundPool, sampleId, status ->
             if (status == 0) {
@@ -316,7 +348,7 @@ open class AssistantService : Service() {
 //        Log.i(TAG, "playRecordStartedNotification(): Notification is played")
         logger.i(ctx, TAG, "playRecordStartedNotification(): Notification is played")
     }
-    private fun stopRecordingAndPlayNotification(){
+    private fun stopRecordingAndExecuteAssistantHelperFunc(){
 
         stopRecording()
         sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
@@ -332,14 +364,15 @@ open class AssistantService : Service() {
         }
     }
     private fun startVoiceCommand() {
-        if (mediaPlayer.isPlaying) {
-            mediaPlayer.stop()
-            mediaPlayer.reset()
-            isMediaPlayerInitialized = false
-        }
+        checkMediaPlayersIsInitialized()
         if (mediaPlayerSilence.isPlaying) {
             mediaPlayerSilence.stop()
             mediaPlayerSilence.reset()
+            isMediaPlayerInitialized = false
+        }
+        if (mediaPlayerResponse.isPlaying) {
+            mediaPlayerResponse.stop()
+            mediaPlayerResponse.reset()
             isMediaPlayerSilenceInitialized = false
         }
         playRecordStartedNotification()
@@ -355,6 +388,15 @@ open class AssistantService : Service() {
 
         } catch (e: IOException) {
             e.printStackTrace()
+        }
+    }
+
+    private fun checkMediaPlayersIsInitialized(){
+        if (!isMediaPlayerInitialized) {
+            mediaPlayerSilence = MediaPlayer()
+        }
+        if (!isMediaPlayerSilenceInitialized) {
+            mediaPlayerResponse = MediaPlayer()
         }
     }
     private fun isInternetAvailable(context: Context): Boolean {
@@ -374,9 +416,6 @@ open class AssistantService : Service() {
     private fun assistantDemoHelper() {
         if (!isRecordingAvailable) {
             stopRecording()
-//            btnRecord.text = "Start"
-            isRecorderAvailable = true
-            // audioRecorder.audioName
             playingAvailable = true
         }
         val fileName = outputFile

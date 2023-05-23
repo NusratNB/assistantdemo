@@ -1,40 +1,47 @@
 package com.example.buddycareassistant.recordaudio
 
+import ai.picovoice.cobra.Cobra
 import android.Manifest
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.util.Log
 import androidx.core.app.ActivityCompat
-import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 import java.io.FileOutputStream
 
 
-class AudioRecorder(private val ctx: Context) {
+class AudioRecorder(private val ctx: Context,
+                    private val cobraVAD: Cobra,
+                    private val muteCallback: (probablity: Float) -> Unit) {
 
     private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
-    private val logger = LogUtil
 
     private val audioSource = MediaRecorder.AudioSource.VOICE_RECOGNITION
     private val sampleRate = 16000
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
-    private var audioRecord: AudioRecord? = null
+    private var audioRecordVAD: AudioRecord? = null
+    private var audioRecordSaving: AudioRecord? = null
     private var isRecording = false
-
+    private val minBufferSize = minBufferSize()
+    private val bufferSize = bufferSize(minBufferSize)
 
 
     fun start(outputFile: File) {
         ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
-        audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize())
+        audioRecordVAD = AudioRecord(audioSource, cobraVAD.sampleRate, channelConfig, audioFormat, bufferSize)
+        audioRecordSaving = AudioRecord(audioSource, cobraVAD.sampleRate, channelConfig, audioFormat, bufferSize)
 //        Log.i(TAG, "Is audioRecord is initialized: ${audioRecord?.state == AudioRecord.STATE_INITIALIZED}")
-        logger.i(ctx, TAG, "Is audioRecord is initialized: ${audioRecord?.state == AudioRecord.STATE_INITIALIZED}")
 
-        if (audioRecord?.state == AudioRecord.STATE_INITIALIZED){
+        if (audioRecordVAD?.state == AudioRecord.STATE_INITIALIZED){
 //            Log.d(TAG, "Recording is started.")
-            logger.d(ctx, TAG, "Recording is started.")
-            audioRecord?.startRecording()
+            audioRecordVAD?.startRecording()
+        }
+        if (audioRecordSaving?.state == AudioRecord.STATE_INITIALIZED){
+//            Log.d(TAG, "Recording is started.")
+            audioRecordSaving?.startRecording()
         }
         isRecording = true
         Thread {
@@ -43,28 +50,39 @@ class AudioRecorder(private val ctx: Context) {
     }
 
     fun stop() {
-        audioRecord?.stop()
-        audioRecord?.release()
-        audioRecord = null
+        audioRecordVAD?.stop()
+        audioRecordVAD?.release()
+        audioRecordSaving?.stop()
+        audioRecordSaving?.release()
+//        audioRecord = null
         isRecording = false
-        logger.i(ctx, TAG, "Record has been stopped")
     }
 
     private fun writeAudioDataToFile(outputFile: File) {
-        val data = ByteArray(bufferSize())
+
+        val data = ByteArray(minBufferSize)
+
+        val buffer = ShortArray(cobraVAD.frameLength)
         val outputStream = FileOutputStream(outputFile)
-        logger.i(ctx, TAG, "Writing audio to the file has been started.")
         while (isRecording) {
-            val read = audioRecord?.read(data, 0, bufferSize()) ?: 0
+            if (audioRecordVAD!!.read(buffer, 0, buffer.size) == buffer.size){
+                val voiceProbability: Float = cobraVAD.process(buffer)
+                Log.d("VAD", "Prob: $voiceProbability")
+                muteCallback.invoke(voiceProbability)
+            }
+            val read = audioRecordSaving?.read(data, 0, data.size) ?: 0
             if (read > 0) {
                 outputStream.write(data, 0, read)
             }
         }
         outputStream.close()
-        logger.i(ctx, TAG, "Writing audio to the file has been finished")
     }
 
-    private fun bufferSize(): Int {
-        return AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 2
+    private fun minBufferSize(): Int{
+        return AudioRecord.getMinBufferSize(cobraVAD.sampleRate, channelConfig, audioFormat)
+    }
+
+    private fun bufferSize(minBufferSize: Int): Int {
+        return (cobraVAD.sampleRate / 2).coerceAtLeast(minBufferSize)
     }
 }
