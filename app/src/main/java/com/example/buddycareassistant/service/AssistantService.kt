@@ -191,6 +191,10 @@ open class AssistantService : Service() {
     private fun closeChannelAndStopRecording(){
         if (!isRecordingAvailable) {
             isRecordingEnabled = false
+            sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+                putExtra("isRecording", false)
+                putExtra("isRecordingEnabled", false)
+            })
             releaseMediaPlayer()
             Log.d("!isRecordingAvailable", "Inside of the if")
 //                        stopRecording()
@@ -298,8 +302,13 @@ open class AssistantService : Service() {
     }
 
     private fun closeChannel(){
+        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+            putExtra("isRecording", false)
+            putExtra("isRecordingEnabled", false)
+        })
         ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
         bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
+
     }
     private fun openChannel(){
         ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
@@ -371,9 +380,13 @@ open class AssistantService : Service() {
     private fun stopRecordingAndExecuteAssistantHelperFunc(){
 
         stopRecording()
-        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-            putExtra("isRecording", false)
-        })
+        if (!isRecordingEnabled){
+            sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+                putExtra("isRecording", false)
+                putExtra("isRecordingEnabled", false)
+            })
+        }
+
         isRecordingAvailable = true
         playingAvailable = true
 

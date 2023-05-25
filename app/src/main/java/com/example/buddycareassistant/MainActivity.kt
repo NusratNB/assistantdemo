@@ -287,6 +287,11 @@ class MainActivity : AppCompatActivity() {
                         val requestItem = Pair(false, "....")
                         assistantAdapter.items.add(0, requestItem)
                         assistantAdapter.notifyDataSetChanged()
+                    } else {
+                        tvRecordingStatus.text = ""
+                        startChat.setBackgroundResource(R.drawable.bg_mic)
+                        assistantAdapter.items.removeFirst()
+                        assistantAdapter.notifyDataSetChanged()
                     }
 
                 }
