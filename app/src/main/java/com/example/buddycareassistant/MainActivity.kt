@@ -290,10 +290,11 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         tvRecordingStatus.text = ""
                         startChat.setBackgroundResource(R.drawable.bg_mic)
-                        assistantAdapter.items.removeFirst()
-                        assistantAdapter.notifyDataSetChanged()
+                        if (assistantAdapter.items.isNotEmpty() && assistantAdapter.items.first().second.equals("....")) {
+                            assistantAdapter.items.removeFirst()
+                            assistantAdapter.notifyDataSetChanged()
+                        }
                     }
-
                 }
             } else if (intent?.action.equals(ASSISTANT_RESPONSE_STATE)) {
                 val isReceived = intent?.getBooleanExtra("isReceived", false)

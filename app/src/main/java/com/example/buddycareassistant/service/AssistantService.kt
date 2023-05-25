@@ -201,6 +201,10 @@ open class AssistantService : Service() {
             stopRecordingAndExecuteAssistantHelperFunc()
         }
         closeChannel()
+        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+            putExtra("isRecording", false)
+            putExtra("isRecordingEnabled", false)
+        })
     }
 
     private fun playAudio() {
@@ -302,10 +306,6 @@ open class AssistantService : Service() {
     }
 
     private fun closeChannel(){
-        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-            putExtra("isRecording", false)
-            putExtra("isRecordingEnabled", false)
-        })
         ActivityCompat.checkSelfPermission(ctx, android.Manifest.permission.BLUETOOTH_CONNECT)
         bluetoothHeadset?.stopVoiceRecognition(deviceBluetooth)
 
