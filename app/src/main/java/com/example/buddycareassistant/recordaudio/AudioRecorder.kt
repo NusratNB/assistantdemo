@@ -51,8 +51,8 @@ class AudioRecorder(private val ctx: Context,
 
     fun stop() {
         audioRecordVAD?.stop()
-        audioRecordVAD?.release()
         audioRecordSaving?.stop()
+        audioRecordVAD?.release()
         audioRecordSaving?.release()
 //        audioRecord = null
         isRecording = false
@@ -67,7 +67,6 @@ class AudioRecorder(private val ctx: Context,
         while (isRecording) {
             if (audioRecordVAD!!.read(buffer, 0, buffer.size) == buffer.size){
                 val voiceProbability: Float = cobraVAD.process(buffer)
-                Log.d("VAD", "Prob: $voiceProbability")
                 muteCallback.invoke(voiceProbability)
             }
             val read = audioRecordSaving?.read(data, 0, data.size) ?: 0

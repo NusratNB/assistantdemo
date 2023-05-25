@@ -125,19 +125,6 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
         }
 
-//        radioGroupLM = findViewById(R.id.radGroupLMType)
-////        recorder = AudioRecorder(this)
-//
-//        radioGroupLM.setOnCheckedChangeListener { radioGroup, id ->
-//
-//            if(id == R.id.radBtnGPT3) {
-//                mPreferences.edit().putString("language_model", "gpt-3").apply()
-//                foregroundBleService?.isNeverClova = false
-//            } else {
-//                mPreferences.edit().putString("language_model", "naver_clova").apply()
-//                foregroundBleService?.isNeverClova = true
-//            }
-//        }
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { // get permission
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.MODIFY_AUDIO_SETTINGS,
@@ -289,15 +276,19 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action.equals(RECORDING_STATE)) {
                 val isRecording = intent?.getBooleanExtra("isRecording", false) ?: false
+                val isRecordingEnabled = intent?.getBooleanExtra("isRecordingEnabled", false)?:false
                 if (isRecording) {
                     tvRecordingStatus.text = "Recording..."
                     startChat.setBackgroundResource(R.drawable.bg_mic_recording)
                 } else {
-                    tvRecordingStatus.text = ""
-                    startChat.setBackgroundResource(R.drawable.bg_mic)
-                    val requestItem = Pair(false, "....")
-                    assistantAdapter.items.add(0, requestItem)
-                    assistantAdapter.notifyDataSetChanged()
+                    if (isRecordingEnabled){
+                        tvRecordingStatus.text = ""
+                        startChat.setBackgroundResource(R.drawable.bg_mic)
+                        val requestItem = Pair(false, "....")
+                        assistantAdapter.items.add(0, requestItem)
+                        assistantAdapter.notifyDataSetChanged()
+                    }
+
                 }
             } else if (intent?.action.equals(ASSISTANT_RESPONSE_STATE)) {
                 val isReceived = intent?.getBooleanExtra("isReceived", false)

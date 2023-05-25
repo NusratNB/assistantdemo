@@ -67,6 +67,7 @@ open class AssistantService : Service() {
     private lateinit var soundPool: SoundPool
     private lateinit var prevSentAudio: File
     private var prevRecAudio = ""
+    private var isRecordingEnabled = false
     private var soundId = 0
     var isNeverClova: Boolean = false
     private lateinit var ctx: Context
@@ -160,11 +161,8 @@ open class AssistantService : Service() {
                 val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
                 logger.d(ctx, TAG, "BluetoothHeadset current state: $state")
                 if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED ) {
-                    if (!isRecordingAvailable) {
-                        stopRecording()
-                    }
-                    releaseMediaPlayer()
-                    closeChannel()
+                    Log.d("!isRecordingAvailable", (!isRecorderAvailable).toString())
+                    closeChannelAndStopRecording()
 
                 }
             }
@@ -188,6 +186,17 @@ open class AssistantService : Service() {
             bluetoothHeadset = null
         }
         deviceBluetooth = null
+    }
+
+    private fun closeChannelAndStopRecording(){
+        if (!isRecordingAvailable) {
+            isRecordingEnabled = false
+            releaseMediaPlayer()
+            Log.d("!isRecordingAvailable", "Inside of the if")
+//                        stopRecording()
+            stopRecordingAndExecuteAssistantHelperFunc()
+        }
+        closeChannel()
     }
 
     private fun playAudio() {
@@ -218,7 +227,9 @@ open class AssistantService : Service() {
                         }
                         mediaPlayerResponse.prepareAsync()
                         mediaPlayerResponse.setOnCompletionListener {
-                            startRecording()
+                            if (isRecordingEnabled){
+                                startRecording()
+                            }
                         }
                         logger.i(ctx, TAG, "Playing audio in path: $audioFilePath")
                     }
@@ -263,15 +274,22 @@ open class AssistantService : Service() {
     }
 
     private fun startRecording() {
-        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-            putExtra("isRecording", true)
-        })
-        time.setToNow()
-        val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
-        outputFile = File(pathToRecords, audioName)
-        recordedChangedAudioName = "changed_$audioName"
-        recorder?.start(outputFile)
-        isRecordingAvailable = false
+        if (isRecordingEnabled){
+            sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+                putExtra("isRecording", true)
+            })
+            time.setToNow()
+            val audioName = time.format("%Y%m%d%H%M%S") + ".pcm"
+            outputFile = File(pathToRecords, audioName)
+            recordedChangedAudioName = "changed_$audioName"
+            recorder?.start(outputFile)
+            isRecordingAvailable = false
+        }else{
+            sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+                putExtra("isRecordingEnabled", false)
+            })
+        }
+
     }
 
     private fun stopRecording() {
@@ -295,12 +313,14 @@ open class AssistantService : Service() {
         logger.d(ctx, "action in foreground: ", "$action")
         if (action == START_ACTION) {
             openChannel()
+            isRecordingEnabled = true
             startVoiceCommand()
         } else if (action == STOP_ACTION) {
             closeChannel()
             stopRecording()
         } else if (action == START_VOICE_COMMAND_ACTION) {
             openChannel()
+            isRecordingEnabled = true
             startVoiceCommand()
         }
         return START_NOT_STICKY
@@ -357,11 +377,19 @@ open class AssistantService : Service() {
         isRecordingAvailable = true
         playingAvailable = true
 
-        try {
-            assistantDemoHelper()
-        } catch (e: IOException) {
-            e.printStackTrace()
+        if (isRecordingEnabled){
+            sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+                putExtra("isRecording", false)
+                putExtra("isRecordingEnabled", true)
+            })
+            try {
+                assistantDemoHelper()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
         }
+
+
     }
     private fun startVoiceCommand() {
         checkMediaPlayersIsInitialized()
@@ -382,9 +410,12 @@ open class AssistantService : Service() {
         conversational = settings["conversational"].toString()
         gender = settings["gender"].toString()
         try {
-            Handler().postDelayed({
-                startRecording()
-            }, 1800)
+            if (isRecordingEnabled){
+                Handler().postDelayed({
+                    startRecording()
+                }, 1800)
+            }
+
 
         } catch (e: IOException) {
             e.printStackTrace()
@@ -460,50 +491,51 @@ open class AssistantService : Service() {
                             playAudio()
                         }
                     } else {
-                        var korToEng = googleServices.googleTranslatorKoreanToEnglish(ttt, language)
+                        val korToEng = googleServices.googleTranslatorKoreanToEnglish(ttt, language)
 
 //                        Log.d(TAG,"Korean to English translation: $korToEng" )
                         logger.d(ctx, TAG,"Korean to English translation: $korToEng")
                         val gpt3Settings = getGPT3Settings()
                         if (korToEng == "") {
-                            korToEng = "I don't understand, can you repeat."
-                            val engToKor = googleServices.googleTranslatorEnglishToKorean(korToEng, language)
-                            val time = Time()
-                            time.setToNow()
-                            audioFilePath =
-                                "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
-                                    .toString() + ".mp3"
-                            prevSentAudio = fileName
-//                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-//                            Log.d("audioFilePath", audioFilePath)
-                            logger.d(ctx, TAG, "pathToSavingAudio $pathToSavingAudio")
-                            logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
-
-                            googleServices.googletts(audioFilePath, engToKor, language, gender)
-
-//                            if (prevRecAudio.isNotEmpty()){
-//                                val ff = File(prevRecAudio)
-//                                ff.delete()
-//                            }
-
-                            val userMessage = "User:$ttt"
-                            val gptMessage = "Assistant:$engToKor"
-//                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
-                            logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
-
-                            val messages = listOf(
-                                Pair(gptMessage, userMessage)
-                            )
-//                            messageStorage.storeMessages(messages)
-
-
-                            sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
-                                putExtra("isReceived", true)
-                                putExtra("isNeverClova", false)
-                                putExtra("data", ttt)
-                                putExtra("responseText", engToKor)
-                            })
-                            playAudio()
+                            closeChannelAndStopRecording()
+//                            korToEng = "I don't understand, can you repeat."
+//                            val engToKor = googleServices.googleTranslatorEnglishToKorean(korToEng, language)
+//                            val time = Time()
+//                            time.setToNow()
+//                            audioFilePath =
+//                                "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
+//                                    .toString() + ".mp3"
+//                            prevSentAudio = fileName
+////                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
+////                            Log.d("audioFilePath", audioFilePath)
+//                            logger.d(ctx, TAG, "pathToSavingAudio $pathToSavingAudio")
+//                            logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
+//
+//                            googleServices.googletts(audioFilePath, engToKor, language, gender)
+//
+////                            if (prevRecAudio.isNotEmpty()){
+////                                val ff = File(prevRecAudio)
+////                                ff.delete()
+////                            }
+//
+//                            val userMessage = "User:$ttt"
+//                            val gptMessage = "Assistant:$engToKor"
+////                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
+//                            logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
+//
+//                            val messages = listOf(
+//                                Pair(gptMessage, userMessage)
+//                            )
+////                            messageStorage.storeMessages(messages)
+//
+//
+//                            sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
+//                                putExtra("isReceived", true)
+//                                putExtra("isNeverClova", false)
+//                                putExtra("data", ttt)
+//                                putExtra("responseText", engToKor)
+//                            })
+//                            playAudio()
                         } else {
                             googleServices.getResponseGPT3(gpt3Settings, korToEng, memory_quality, conversational) { responseFromGPT3 ->
                                 // engToKor: Google Translator result
