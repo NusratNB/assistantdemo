@@ -196,14 +196,14 @@ open class AssistantService : Service() {
         })
         releaseMediaPlayer()
 
-        if (isFromApi){
-            stopRecordingAndExecuteAssistantHelperFunc()
-        }
+//        if (isFromApi){
+//            stopRecordingAndExecuteAssistantHelperFunc()
+//        }
         closeChannel()
-        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-            putExtra("isRecording", false)
-            putExtra("isRecordingEnabled", false)
-        })
+//        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+//            putExtra("isRecording", false)
+//            putExtra("isRecordingEnabled", false)
+//        })
     }
 
     private fun playAudio() {
@@ -516,6 +516,17 @@ open class AssistantService : Service() {
                                 // engToKor: Google Translator result
                                 val engToKor =
                                     googleServices.googleTranslatorEnglishToKorean(responseFromGPT3, language)
+                                val userMessage = "User:$googleSTTResult"
+                                val gptMessage = "Assistant:$engToKor"
+//                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
+                                logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
+
+                                val messages = listOf(
+                                    Pair(gptMessage, userMessage)
+                                )
+                                messageStorage.storeMessages(messages)
+
+//                                Log.d(TAG, "English to Korean translation: $engToKor")
                                 logger.d(ctx, TAG, "English to Korean translation: $engToKor")
 
                                 val time = Time()

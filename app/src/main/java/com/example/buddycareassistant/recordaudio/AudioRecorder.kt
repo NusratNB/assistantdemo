@@ -53,14 +53,18 @@ class AudioRecorder(private val ctx: Context,
     }
 
     fun stop() {
-        audioRecordVAD?.stop()
-        audioRecordSaving?.stop()
-        audioRecordVAD?.release()
-        audioRecordSaving?.release()
-        logger.i(ctx, TAG, "audioRecord for VAD is stopped")
-        logger.i(ctx, TAG, "audioRecord for saving audio is stopped")
-        isRecording = false
-        logger.i(ctx, TAG, "isRecording=${this.isRecording}")
+        try {
+            audioRecordVAD?.stop()
+            audioRecordSaving?.stop()
+            audioRecordVAD?.release()
+            audioRecordSaving?.release()
+            logger.i(ctx, TAG, "audioRecord for VAD is stopped")
+            logger.i(ctx, TAG, "audioRecord for saving audio is stopped")
+            isRecording = false
+            logger.i(ctx, TAG, "isRecording=${this.isRecording}")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun writeAudioDataToFile(outputFile: File) {
