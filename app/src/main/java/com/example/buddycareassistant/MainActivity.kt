@@ -212,7 +212,9 @@ class MainActivity : AppCompatActivity() {
                 val isRecording = intent?.getStringExtra("isRecording")
 
                 if (isReceived == true) {
-                    assistantAdapter.items.removeFirst()
+                    if (assistantAdapter.items.isNotEmpty()){
+                        assistantAdapter.items.removeFirst()
+                    }
                     val requestItem = Pair(false, data!!)
                     val responseItem = Pair(true, responseText!!)
                     assistantAdapter.items.add(0, requestItem)

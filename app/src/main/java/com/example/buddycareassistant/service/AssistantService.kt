@@ -379,7 +379,7 @@ open class AssistantService : Service() {
         logger.i(ctx, TAG, "playRecordStartedNotification(): Notification is played")
     }
     private fun stopRecordingAndExecuteAssistantHelperFunc(){
-        if (isRecordingAvailable){
+        if (!isRecordingAvailable){
             stopRecording()
         }
 
