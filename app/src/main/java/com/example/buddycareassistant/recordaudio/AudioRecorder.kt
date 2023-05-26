@@ -6,10 +6,11 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.util.Log
 import androidx.core.app.ActivityCompat
+import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.math.log
 
 
 class AudioRecorder(private val ctx: Context,
@@ -24,6 +25,7 @@ class AudioRecorder(private val ctx: Context,
     private val audioFormat = AudioFormat.ENCODING_PCM_16BIT
     private var audioRecordVAD: AudioRecord? = null
     private var audioRecordSaving: AudioRecord? = null
+    private var logger: LogUtil = LogUtil
     private var isRecording = false
     private val minBufferSize = minBufferSize()
     private val bufferSize = bufferSize(minBufferSize)
@@ -33,14 +35,15 @@ class AudioRecorder(private val ctx: Context,
         ActivityCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO)
         audioRecordVAD = AudioRecord(audioSource, cobraVAD.sampleRate, channelConfig, audioFormat, bufferSize)
         audioRecordSaving = AudioRecord(audioSource, cobraVAD.sampleRate, channelConfig, audioFormat, bufferSize)
-//        Log.i(TAG, "Is audioRecord is initialized: ${audioRecord?.state == AudioRecord.STATE_INITIALIZED}")
+        logger.i(ctx, TAG, "audioRecord for VAD is initialized")
+        logger.i(ctx, TAG, "audioRecord for saving audio is initialized")
 
         if (audioRecordVAD?.state == AudioRecord.STATE_INITIALIZED){
-//            Log.d(TAG, "Recording is started.")
+            logger.i(ctx, TAG, "recording for VAD is started")
             audioRecordVAD?.startRecording()
         }
         if (audioRecordSaving?.state == AudioRecord.STATE_INITIALIZED){
-//            Log.d(TAG, "Recording is started.")
+            logger.i(ctx, TAG, "recording for saving audio is started")
             audioRecordSaving?.startRecording()
         }
         isRecording = true
@@ -54,8 +57,10 @@ class AudioRecorder(private val ctx: Context,
         audioRecordSaving?.stop()
         audioRecordVAD?.release()
         audioRecordSaving?.release()
-//        audioRecord = null
+        logger.i(ctx, TAG, "audioRecord for VAD is stopped")
+        logger.i(ctx, TAG, "audioRecord for saving audio is stopped")
         isRecording = false
+        logger.i(ctx, TAG, "isRecording=${this.isRecording}")
     }
 
     private fun writeAudioDataToFile(outputFile: File) {
@@ -74,6 +79,7 @@ class AudioRecorder(private val ctx: Context,
                 outputStream.write(data, 0, read)
             }
         }
+        logger.i(ctx, TAG, "FileOutputStream for saving audio is closed")
         outputStream.close()
     }
 

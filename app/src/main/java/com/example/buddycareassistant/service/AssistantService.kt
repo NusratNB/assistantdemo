@@ -12,10 +12,6 @@ import android.content.*
 import android.media.*
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Binder
-import android.os.Build
-import android.os.Handler
-import android.os.IBinder
 import android.text.format.Time
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -29,6 +25,7 @@ import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 import java.io.IOException
 import ai.picovoice.cobra.*
+import android.os.*
 import android.util.Log
 import java.util.LinkedList
 
@@ -61,8 +58,8 @@ open class AssistantService : Service() {
     private var gender = "Male"
     private var mediaPlayerSilence: MediaPlayer = MediaPlayer()
     private var mediaPlayerResponse: MediaPlayer = MediaPlayer()
-    private var isMediaPlayerInitialized = true
     private var isMediaPlayerSilenceInitialized = true
+    private var isMediaPlayerResponceInitialized = true
     private val BEGINNING_ALERT = "alerts/Beginning_alt.mp3"
     private lateinit var soundPool: SoundPool
     private lateinit var prevSentAudio: File
@@ -99,8 +96,11 @@ open class AssistantService : Service() {
         cobraVAD = Cobra(cobraAccessKey)
         recorder = AudioRecorder(this, cobraVAD) {probablity ->
             vadQueue.addFirst(probablity)
-            if (vadQueue.size > 100)
+            if (vadQueue.size > 100){
+                logger.i(this, TAG, "vadQueue.size: ${vadQueue.size}")
                 checkSilence()
+            }
+
         }
         val filterBluetoothConnection = IntentFilter().apply {
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
@@ -142,7 +142,7 @@ open class AssistantService : Service() {
 //                        Log.i(TAG, "Connected bluetooth device information. MAC: ${deviceBluetooth!!.address}, NAME: ${deviceBluetooth!!.name}")
                         logger.i(ctx, TAG, "Connected bluetooth device information. MAC: ${deviceBluetooth!!.address}, NAME: ${deviceBluetooth!!.name}")
                     }else{
-
+                        Toast.makeText(ctx, "No device found", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -161,7 +161,7 @@ open class AssistantService : Service() {
                 val state = intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, -1)
                 logger.d(ctx, TAG, "BluetoothHeadset current state: $state")
                 if (state == BluetoothHeadset.STATE_AUDIO_DISCONNECTED ) {
-                    Log.d("!isRecordingAvailable", (!isRecorderAvailable).toString())
+                    logger.i(context, TAG, "isRecordingAvailable: $isRecorderAvailable")
                     closeChannelAndStopRecording()
 
                 }
@@ -188,16 +188,15 @@ open class AssistantService : Service() {
         deviceBluetooth = null
     }
 
-    private fun closeChannelAndStopRecording(){
-        if (!isRecordingAvailable) {
-            isRecordingEnabled = false
-            sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-                putExtra("isRecording", false)
-                putExtra("isRecordingEnabled", false)
-            })
-            releaseMediaPlayer()
-            Log.d("!isRecordingAvailable", "Inside of the if")
-//                        stopRecording()
+    private fun closeChannelAndStopRecording(isFromApi: Boolean =true){
+        isRecordingEnabled = false
+        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
+            putExtra("isRecording", false)
+            putExtra("isRecordingEnabled", false)
+        })
+        releaseMediaPlayer()
+
+        if (isFromApi){
             stopRecordingAndExecuteAssistantHelperFunc()
         }
         closeChannel()
@@ -246,39 +245,48 @@ open class AssistantService : Service() {
                 logger.i(ctx, TAG, "Playing silence")
                 playingAvailable = false
 
+            }else {
+                logger.i(ctx, TAG, "No record found")
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
+                }
+
             }
 //            if (prevSentAudio.path.isNotEmpty() == true){
 //                prevSentAudio.delete()
 //            }
             prevRecAudio = audioFilePath
 
-        } else {
-            logger.i(ctx, TAG, "No record found")
-            Toast.makeText(this, "No record found", Toast.LENGTH_SHORT).show()
         }
     }
 
 
 
     fun stopPlayer() {
-        if (mediaPlayerSilence.isPlaying){
-            mediaPlayerSilence.stop()
-            mediaPlayerSilence.reset()
-            isMediaPlayerInitialized = false
+        if (isMediaPlayerSilenceInitialized){
+            if (mediaPlayerSilence.isPlaying){
+                mediaPlayerSilence.stop()
+                mediaPlayerSilence.reset()
+                isMediaPlayerSilenceInitialized = false
+            }
         }
-        if (mediaPlayerResponse.isPlaying){
-            mediaPlayerResponse.stop()
-            mediaPlayerResponse.reset()
-            isMediaPlayerSilenceInitialized = false
+        if (isMediaPlayerResponceInitialized){
+            if (mediaPlayerResponse.isPlaying){
+                mediaPlayerResponse.stop()
+                mediaPlayerResponse.reset()
+                isMediaPlayerResponceInitialized = false
+            }
         }
+
+
     }
 
     private fun releaseMediaPlayer(){
         stopPlayer()
         mediaPlayerSilence.release()
         mediaPlayerResponse.release()
+        isMediaPlayerResponceInitialized = false
         isMediaPlayerSilenceInitialized = false
-        isMediaPlayerInitialized = false
     }
 
     private fun startRecording() {
@@ -338,20 +346,13 @@ open class AssistantService : Service() {
         if (mediaPlayerSilence.isPlaying) {
             mediaPlayerSilence.stop()
             mediaPlayerSilence.reset()
-            isMediaPlayerInitialized = false
+            isMediaPlayerSilenceInitialized = false
         }
         if (mediaPlayerResponse.isPlaying) {
             mediaPlayerResponse.stop()
             mediaPlayerResponse.reset()
-            isMediaPlayerSilenceInitialized = false
+            isMediaPlayerResponceInitialized = false
         }
-
-        /*
-        * mediaPlayerResponse.setAudioAttributes(AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                            .build())*/
-
         val audioAttributes = AudioAttributes.Builder()
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
@@ -378,8 +379,10 @@ open class AssistantService : Service() {
         logger.i(ctx, TAG, "playRecordStartedNotification(): Notification is played")
     }
     private fun stopRecordingAndExecuteAssistantHelperFunc(){
+        if (isRecordingAvailable){
+            stopRecording()
+        }
 
-        stopRecording()
         if (!isRecordingEnabled){
             sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
                 putExtra("isRecording", false)
@@ -409,12 +412,12 @@ open class AssistantService : Service() {
         if (mediaPlayerSilence.isPlaying) {
             mediaPlayerSilence.stop()
             mediaPlayerSilence.reset()
-            isMediaPlayerInitialized = false
+            isMediaPlayerSilenceInitialized = false
         }
         if (mediaPlayerResponse.isPlaying) {
             mediaPlayerResponse.stop()
             mediaPlayerResponse.reset()
-            isMediaPlayerSilenceInitialized = false
+            isMediaPlayerResponceInitialized = false
         }
         playRecordStartedNotification()
         val settings = getSettings()
@@ -436,10 +439,10 @@ open class AssistantService : Service() {
     }
 
     private fun checkMediaPlayersIsInitialized(){
-        if (!isMediaPlayerInitialized) {
+        if (!isMediaPlayerSilenceInitialized) {
             mediaPlayerSilence = MediaPlayer()
         }
-        if (!isMediaPlayerSilenceInitialized) {
+        if (!isMediaPlayerResponceInitialized) {
             mediaPlayerResponse = MediaPlayer()
         }
     }
@@ -465,18 +468,16 @@ open class AssistantService : Service() {
         val fileName = outputFile
         if (fileName.path.isNotEmpty()) {
             Thread {
-                // ttt: Google STT result
-                val ttt = googleServices.getSTTText(fileName.path, language, recordedChangedAudioName, pathToRecords)
-//                Log.d(TAG, "Google STT result: $ttt")
-                logger.d(ctx, TAG, "Google STT result: $ttt")
+                val googleSTTResult = googleServices.getSTTText(fileName.path, language, recordedChangedAudioName, pathToRecords)
+                logger.d(ctx, TAG, "Google STT result: $googleSTTResult")
                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                     putExtra("isReceived", false)
-                    putExtra("data", ttt)
+                    putExtra("data", googleSTTResult)
                 })
                 Thread {
                     if (isNeverClova) {
 
-                        googleServices.getResponseClovaStudio(ttt) { responseFromNaverClova ->
+                        googleServices.getResponseClovaStudio(googleSTTResult) { responseFromNaverClova ->
                             val time = Time()
                             time.setToNow()
                             audioFilePath =
@@ -484,8 +485,6 @@ open class AssistantService : Service() {
                                     .toString() + ".mp3"
                             prevSentAudio = fileName
 
-//                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-//                            Log.d("audioFilePath", audioFilePath)
                             logger.d(ctx, TAG, "pathToSavingAudio: $pathToSavingAudio")
                             logger.d(ctx, TAG, "audioFilePath, $audioFilePath")
 
@@ -497,74 +496,26 @@ open class AssistantService : Service() {
                             sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                 putExtra("isReceived", true)
                                 putExtra("isNeverClova", true)
-                                putExtra("data", ttt)
+                                putExtra("data", googleSTTResult)
                                 putExtra("responseText", responseFromNaverClova)
                                 putExtra("isRecording", isRecordingAvailable)
                             })
                             playAudio()
                         }
                     } else {
-                        val korToEng = googleServices.googleTranslatorKoreanToEnglish(ttt, language)
+                        val korToEng = googleServices.googleTranslatorKoreanToEnglish(googleSTTResult, language)
 
 //                        Log.d(TAG,"Korean to English translation: $korToEng" )
                         logger.d(ctx, TAG,"Korean to English translation: $korToEng")
                         val gpt3Settings = getGPT3Settings()
                         if (korToEng == "") {
-                            closeChannelAndStopRecording()
-//                            korToEng = "I don't understand, can you repeat."
-//                            val engToKor = googleServices.googleTranslatorEnglishToKorean(korToEng, language)
-//                            val time = Time()
-//                            time.setToNow()
-//                            audioFilePath =
-//                                "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
-//                                    .toString() + ".mp3"
-//                            prevSentAudio = fileName
-////                            Log.d("pathToSavingAudio", pathToSavingAudio.toString())
-////                            Log.d("audioFilePath", audioFilePath)
-//                            logger.d(ctx, TAG, "pathToSavingAudio $pathToSavingAudio")
-//                            logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
-//
-//                            googleServices.googletts(audioFilePath, engToKor, language, gender)
-//
-////                            if (prevRecAudio.isNotEmpty()){
-////                                val ff = File(prevRecAudio)
-////                                ff.delete()
-////                            }
-//
-//                            val userMessage = "User:$ttt"
-//                            val gptMessage = "Assistant:$engToKor"
-////                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
-//                            logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
-//
-//                            val messages = listOf(
-//                                Pair(gptMessage, userMessage)
-//                            )
-////                            messageStorage.storeMessages(messages)
-//
-//
-//                            sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
-//                                putExtra("isReceived", true)
-//                                putExtra("isNeverClova", false)
-//                                putExtra("data", ttt)
-//                                putExtra("responseText", engToKor)
-//                            })
-//                            playAudio()
+                            closeChannelAndStopRecording(false)
+
                         } else {
                             googleServices.getResponseGPT3(gpt3Settings, korToEng, memory_quality, conversational) { responseFromGPT3 ->
                                 // engToKor: Google Translator result
                                 val engToKor =
                                     googleServices.googleTranslatorEnglishToKorean(responseFromGPT3, language)
-                                val userMessage = "User:$ttt"
-                                val gptMessage = "Assistant:$engToKor"
-//                                Log.d(TAG, "Messages: User: $userMessage; gpt: $gptMessage")
-                                logger.d(ctx, TAG, "Messages: User: $userMessage; gpt: $gptMessage")
-
-                                val messages = listOf(
-                                    Pair(gptMessage, userMessage)
-                                )
-                                messageStorage.storeMessages(messages)
-
-//                                Log.d(TAG, "English to Korean translation: $engToKor")
                                 logger.d(ctx, TAG, "English to Korean translation: $engToKor")
 
                                 val time = Time()
@@ -573,8 +524,6 @@ open class AssistantService : Service() {
                                     "$pathToSavingAudio/" + time.format("%Y%m%d%H%M%S")
                                         .toString() + ".mp3"
                                 prevSentAudio = fileName
-//                                Log.d(TAG, "pathToSavingAudio: $pathToSavingAudio")
-//                                Log.d(TAG, "audioFilePath: $audioFilePath")
                                 logger.d(ctx, TAG, "pathToSavingAudio: $pathToSavingAudio")
                                 logger.d(ctx, TAG, "audioFilePath: $audioFilePath")
 
@@ -589,7 +538,7 @@ open class AssistantService : Service() {
                                 sendBroadcast(Intent(MainActivity.ASSISTANT_RESPONSE_STATE).apply {
                                     putExtra("isReceived", true)
                                     putExtra("isNeverClova", false)
-                                    putExtra("data", ttt)
+                                    putExtra("data", googleSTTResult)
                                     putExtra("responseText", engToKor)
                                 })
                                 playAudio()

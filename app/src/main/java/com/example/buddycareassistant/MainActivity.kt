@@ -23,16 +23,7 @@ import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
-//    private lateinit var btnRecord: Button
-//    private lateinit var btnStopAudio: Button
-//    private lateinit var btnInfo: Button
-//    private lateinit var  btnNewChatRoom: Button
-//    private lateinit var btnSettings: Button
-//    private lateinit var btnBluetoothControl: Button
     private lateinit var pathToSavingMessagesMainActivity: File
-//    private lateinit var txtSent: TextView
-//    private lateinit var txtReceived: TextView
-//    private lateinit var radioGroupLM: RadioGroup
     private lateinit var googlestt: GoogleServices
     private lateinit var handler: Handler
     private lateinit var messageStorage: MessageStorage
@@ -135,99 +126,16 @@ class MainActivity : AppCompatActivity() {
         logger = LogUtil
         messageStorage = MessageStorage(this)
         assistantAdapter.items.addAll(messageStorage.retrieveUserAssistantMessages().reversed())
-        /*btnNewChatRoom = findViewById(R.id.btnNewChatRoom)
-
-        btnNewChatRoom.setOnClickListener {
-            val gptPromptFileName = "GPTPrompt.txt"
-            pathToSavingMessagesMainActivity = File(this.externalCacheDir?.absolutePath, "Messages")
-            if (!pathToSavingMessagesMainActivity.exists()){
-                pathToSavingMessagesMainActivity.mkdir()
-            }
-            val tempText = """
-            {
-              "model": "gpt-3.5-turbo",
-              "messages": [
-                        {"role": "system", "content": "You are a helpful friend."}
-                    ],
-               "max_tokens": 200,
-               "temperature": 1.0,
-               "top_p": 1.0,
-               "n": 1,
-               "stream": false,
-               "frequency_penalty":0.0,
-               "presence_penalty":0.6
-            }
-        """
-            val file = File(pathToSavingMessagesMainActivity, gptPromptFileName)
-            messageStorage.saveGptPrompt(tempText)
-            logger.i(this, TAG, "New chat room has been created")
-
-            Toast.makeText(this, "New Chat room has been created", Toast.LENGTH_LONG).show()
-        }*/
-
-//        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-//
-//        if (bluetoothAdapter == null) {
-//            // Device doesn't support Bluetooth
-//            return
-//        }
-
-//        pathToRecords = File(externalCacheDir?.absoluteFile, "AudioRecord" )
-//        if (!pathToRecords.exists()){
-//            pathToRecords.mkdir()
-//        }
-//        bluetoothController = BluetoothControllerImpl(this)
-//
-//        pathToSavingAudio = File(externalCacheDir?.absoluteFile, "SavedRecordings" )
-//        if (!pathToSavingAudio.exists()){
-//            pathToSavingAudio.mkdir()
-//            initGPT3Settings()
-//        }
-        /*btnBluetoothControl = findViewById(R.id.btnBluetoothControl)
-        btnBluetoothControl.setOnClickListener {
-            startActivity(Intent(this@MainActivity, BluetoothControlActivity::class.java))
-        }
-
-        btnRecord = findViewById(R.id.btnRecord)
-        btnRecord.text = "Start"
-
-        txtReceived = findViewById(R.id.txtReceived)
-        txtSent = findViewById(R.id.txtSent)
-        btnStopAudio = findViewById(R.id.btnStopAudio)
-        btnInfo = findViewById(R.id.btnInfo)
-
-        btnInfo.setOnClickListener {
-            startActivity(Intent(this@MainActivity, ParametersInfoActivity::class.java))
-        }
-        btnSettings = findViewById(R.id.btnSettings)
-        btnSettings.setOnClickListener {
-            startActivity(Intent(this@MainActivity, GPT3SettingsActivity::class.java))
-        }
-//        requestDisableBatteryOptimization()
-
-        btnStopAudio.setOnClickListener {
-            foregroundBleService?.stopPlayer()
-        }*/
-
-//        if(mPreferences.getString("language_model", "gpt-3").equals("gpt-3")){
-//            radioGroupLM.check(R.id.radBtnGPT3)
-//        } else {
-//            radioGroupLM.check(R.id.radBtnNaverClova)
-//        }
         handler = Handler()
         onNewIntent(intent)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-//        outState.putString("txtSentText", txtSent.text.toString())
-//        outState.putString("txtReceivedText", txtReceived.text.toString())
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-//        txtSent.text = savedInstanceState.getString("txtSentText")
-//        txtReceived.text = savedInstanceState.getString("txtReceivedText")
     }
 
     override fun onResume() {
