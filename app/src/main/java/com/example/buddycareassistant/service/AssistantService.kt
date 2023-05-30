@@ -96,8 +96,7 @@ open class AssistantService : Service() {
         cobraVAD = Cobra(cobraAccessKey)
         recorder = AudioRecorder(this, cobraVAD) {probablity ->
             vadQueue.addFirst(probablity)
-            if (vadQueue.size > 100){
-                logger.i(this, TAG, "vadQueue.size: ${vadQueue.size}")
+            if (vadQueue.size > 120){
                 checkSilence()
             }
 
@@ -117,10 +116,10 @@ open class AssistantService : Service() {
     }
 
     private fun checkSilence() {
-        val elements = vadQueue.slice(IntRange(0, 100))
+        val elements = vadQueue.slice(IntRange(0, 120))
         var mins = 0
         elements.forEach { if (it < 0.25f) mins ++ }
-        if (mins > 80) {
+        if (mins > 100) {
             vadQueue.clear()
             stopRecordingAndExecuteAssistantHelperFunc()
         }
