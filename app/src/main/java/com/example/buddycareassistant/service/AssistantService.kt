@@ -74,6 +74,7 @@ open class AssistantService : Service() {
     private val cobraAccessKey = "pZNnAfYBzFJPPyNrSVx4KW5T8S7sRc1uIAlrUkf8LUlnzLUkAGlt+g=="
     private var lastMuteTime: Long = 0
     private val vadQueue = LinkedList<Float>()
+
     override fun onCreate() {
         super.onCreate()
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -99,7 +100,6 @@ open class AssistantService : Service() {
             if (vadQueue.size > 120){
                 checkSilence()
             }
-
         }
         val filterBluetoothConnection = IntentFilter().apply {
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
