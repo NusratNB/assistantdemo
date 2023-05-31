@@ -234,7 +234,10 @@ open class AssistantService : Service() {
                         mediaPlayerResponse.prepareAsync()
                         mediaPlayerResponse.setOnCompletionListener {
                             if (isRecordingEnabled){
-                                startRecording()
+                                playRecordStartedNotification()
+                                Handler().postDelayed({
+                                    startRecording()
+                                }, 1500)
                             }
                         }
                         logger.i(ctx, TAG, "Playing audio in path: $audioFilePath")
