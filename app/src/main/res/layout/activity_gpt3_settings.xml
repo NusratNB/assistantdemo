@@ -205,6 +205,31 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <TextView
+            android:id = "@+id/txtSystemRole"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="System role:"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            >
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSystemRole"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:hint=""
+                />
+<!--                android:inputType="number"-->
+
+
+        </com.google.android.material.textfield.TextInputLayout>
+
         <CheckBox
             android:id="@+id/tokensCheckBox"
             android:layout_width="wrap_content"

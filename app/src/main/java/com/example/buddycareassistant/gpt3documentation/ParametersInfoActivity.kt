@@ -87,16 +87,5 @@ class ParametersInfoActivity : AppCompatActivity() {
                 "Note: Because this parameter generates many completions, it can quickly consume your token quota. Use carefully and ensure that you have reasonable " +
                 "settings for max_tokens and stop (Integer. Optional. Defaults to 1)."
 
-
-
-
-
-
-
-
-
-
-
-
     }
 }

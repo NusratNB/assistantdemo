@@ -1,11 +1,13 @@
 package com.example.buddycareassistant
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
+import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
 import com.example.buddycareassistant.utils.LogUtil
 
 class SettingsActivity: AppCompatActivity() {
@@ -16,6 +18,7 @@ class SettingsActivity: AppCompatActivity() {
     private lateinit var btnSave: Button
     private lateinit var logger: LogUtil
     private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
+    private lateinit var btnGPTSettings: Button
 
     private val memoryQualities = arrayOf("Low", "Medium", "High")
     private val languages = arrayOf("Korean", "English")
@@ -39,6 +42,7 @@ class SettingsActivity: AppCompatActivity() {
         supportActionBar?.title = "Settings"
         logger = LogUtil
 
+
         spMemoryQuality.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1,
             memoryQualities)
         spLanguage.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1,
@@ -52,6 +56,11 @@ class SettingsActivity: AppCompatActivity() {
         spLanguage.setSelection(languages.indexOf(pref.getString("language", "Korean")))
         spConversationalStyle.setSelection(conversationalStyles.indexOf(pref.getString("conversational", "More Creative")))
         spGender.setSelection(genders.indexOf(pref.getString("gender", "Female")))
+
+        btnGPTSettings = findViewById(R.id.btnGPTFullSettings)
+        btnGPTSettings.setOnClickListener {
+            startActivity(Intent(this, GPT3SettingsActivity::class.java))
+        }
 
         btnSave.setOnClickListener {
             pref.edit()

@@ -411,35 +411,41 @@ class GoogleServices(val context: Context, private val assetManager: AssetManage
                 if (responseCode != 200 || responseBody == null) {
 //                    Log.e("GPT3 Code Err: ", "$responseCode $responseMessage: $responseBody")
                     logger.e(context, TAG, "GPT3 Code Err: $responseCode $responseMessage: $responseBody")
+                    if (responseCode == 429)
+                        Toast.makeText(context, "Too many requests. Please try again later", Toast.LENGTH_SHORT).show()
+                    else
+                        Toast.makeText(context, "Something went wrong. Please try again later", Toast.LENGTH_SHORT).show()
 
-                }
-                try {
+                }else {
+                    try {
 
-                    val json = JSONObject(responseBody!!.readUtf8())
+                        val json = JSONObject(responseBody!!.readUtf8())
 
-                    val result = json.get("choices")
+                        val result = json.get("choices")
 //                    Log.d(TAG, "GPT3 result: $result")
-                    logger.d(context, TAG, "GPT3 result: $result")
-                    val resultJson = JSONArray(result.toString())
-                    val text = JSONObject(resultJson.get(0).toString())
-                    val resText = text["message"]
-                    val content = JSONObject(resText.toString())
-                    responseGPT3 = content["content"].toString().trim()
+                        logger.d(context, TAG, "GPT3 result: $result")
+                        val resultJson = JSONArray(result.toString())
+                        val text = JSONObject(resultJson.get(0).toString())
+                        val resText = text["message"]
+                        val content = JSONObject(resText.toString())
+                        responseGPT3 = content["content"].toString().trim()
 
-                    val assistantResponse = JSONObject()
-                    assistantResponse.put("role", "assistant")
-                    assistantResponse.put("content", responseGPT3)
-                    val messagesArray = promptJson.getJSONArray("messages")
-                    messagesArray.put(assistantResponse)
-                    messageStorage.saveGptPrompt(promptJson.toString())
+                        val assistantResponse = JSONObject()
+                        assistantResponse.put("role", "assistant")
+                        assistantResponse.put("content", responseGPT3)
+                        val messagesArray = promptJson.getJSONArray("messages")
+                        messagesArray.put(assistantResponse)
+                        messageStorage.saveGptPrompt(promptJson.toString())
 
 //                    Log.d(TAG, "GPT3 content: $content")
-                    logger.d(context, TAG, "GPT3 content: $content")
-                } catch (e: Exception) {
+                        logger.d(context, TAG, "GPT3 content: $content")
+                    } catch (e: Exception) {
 //                    Log.d(TAG, "GPT3 Error: " + e.stackTraceToString() )
-                    logger.d(context, TAG, "GPT3 Error: " + e.stackTraceToString() )
+                        logger.d(context, TAG, "GPT3 Error: " + e.stackTraceToString() )
+                    }
+                    callback(responseGPT3)
                 }
-                callback(responseGPT3)
+
 
             }
         })

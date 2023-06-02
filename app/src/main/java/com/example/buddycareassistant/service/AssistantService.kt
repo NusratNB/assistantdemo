@@ -1,5 +1,6 @@
 package com.example.buddycareassistant.service
 
+import ai.picovoice.cobra.Cobra
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,10 +10,16 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothProfile
 import android.content.*
-import android.media.*
+import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.AudioManager.OnAudioFocusChangeListener
+import android.media.MediaPlayer
+import android.media.SoundPool
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.*
 import android.text.format.Time
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -24,10 +31,7 @@ import com.example.buddycareassistant.storemessages.MessageStorage
 import com.example.buddycareassistant.utils.LogUtil
 import java.io.File
 import java.io.IOException
-import ai.picovoice.cobra.*
-import android.os.*
-import android.util.Log
-import java.util.LinkedList
+import java.util.*
 
 
 open class AssistantService : Service() {
@@ -74,6 +78,8 @@ open class AssistantService : Service() {
     private val cobraAccessKey = "pZNnAfYBzFJPPyNrSVx4KW5T8S7sRc1uIAlrUkf8LUlnzLUkAGlt+g=="
     private var lastMuteTime: Long = 0
     private val vadQueue = LinkedList<Float>()
+    private var audioFocusResult:Int = 0
+    private lateinit var mAudioAttributes: AudioAttributes
 
     override fun onCreate() {
         super.onCreate()
@@ -101,6 +107,13 @@ open class AssistantService : Service() {
                 checkSilence()
             }
         }
+
+        mAudioAttributes = AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+            .build()
+
+
         val filterBluetoothConnection = IntentFilter().apply {
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
@@ -108,12 +121,27 @@ open class AssistantService : Service() {
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 //        registerReceiver(bluetoothDisconnectReceiver, filterBluetoothConnection)
 
+
         isNeverClova = !mPreferences.getString("language_model", "gpt-3").equals("gpt-3")
         messageStorage = MessageStorage(this)
         setupBluetoothHeadset()
         val filter = IntentFilter(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)
         registerReceiver(AudioStateReceiver(), filter)
     }
+
+    var focusChangeListener =  OnAudioFocusChangeListener { focusChange ->
+            logger.i(ctx, TAG, "Audio focus: $focusChange")
+            if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                // Pause playback
+            } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+                // Resume playback or raise it from duck volume
+            } else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+                closeChannelAndStopRecording()
+                // Stop playback, because you've lost focus permanently.
+                // This is likely because the user has started a new media player
+                // that doesn't know how to duck, so we need to stop playback immediately.
+            }
+        }
 
     private fun checkSilence() {
         val elements = vadQueue.slice(IntRange(0, 120))
@@ -193,16 +221,13 @@ open class AssistantService : Service() {
             putExtra("isRecording", false)
             putExtra("isRecordingEnabled", false)
         })
+        val result: Int = audioManager.abandonAudioFocus(focusChangeListener)
+        if (result==AudioManager.AUDIOFOCUS_REQUEST_GRANTED){
+            logger.i(ctx, TAG, "Audio focus successfully abandoned")
+        }else
+            logger.i(ctx, TAG, "Audio focus not abandoned")
         releaseMediaPlayer()
-
-//        if (isFromApi){
-//            stopRecordingAndExecuteAssistantHelperFunc()
-//        }
         closeChannel()
-//        sendBroadcast(Intent(MainActivity.RECORDING_STATE).apply {
-//            putExtra("isRecording", false)
-//            putExtra("isRecordingEnabled", false)
-//        })
     }
 
     private fun playAudio() {
@@ -223,10 +248,7 @@ open class AssistantService : Service() {
                     if (file.exists()) {
                         mediaPlayerResponse.reset()
                         mediaPlayerResponse.setDataSource(audioFilePath)
-                        mediaPlayerResponse.setAudioAttributes(AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                            .build())
+                        mediaPlayerResponse.setAudioAttributes(mAudioAttributes)
                         mediaPlayerResponse.setOnPreparedListener {
                             mediaPlayerResponse.start()
                             Log.d("TestingPhoneProfile", "MediaPlayer started")
@@ -339,8 +361,17 @@ open class AssistantService : Service() {
             stopRecording()
         } else if (action == START_VOICE_COMMAND_ACTION) {
             openChannel()
-            isRecordingEnabled = true
-            startVoiceCommand()
+            audioFocusResult = audioManager.requestAudioFocus(
+                focusChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
+            if (audioFocusResult==AudioManager.AUDIOFOCUS_REQUEST_GRANTED){
+                isRecordingEnabled = true
+                startVoiceCommand()
+            }else
+                closeChannelAndStopRecording()
+
         }
         return START_NOT_STICKY
     }
@@ -355,13 +386,13 @@ open class AssistantService : Service() {
             mediaPlayerResponse.reset()
             isMediaPlayerResponceInitialized = false
         }
-        val audioAttributes = AudioAttributes.Builder()
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-            .build()
+//        val audioAttributes = AudioAttributes.Builder()
+//            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+//            .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+//            .build()
 
         soundPool = SoundPool.Builder()
-            .setAudioAttributes(audioAttributes)
+            .setAudioAttributes(mAudioAttributes)
             .setMaxStreams(1)
             .build()
 
@@ -641,12 +672,14 @@ open class AssistantService : Service() {
         val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
         val chatWindowSize = mPreferences.getString("chatWindowSize", "5")
         val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
+        val systemRoleContent = mPreferences.getString("systemRoleContent", "You are a helpful friend.")
+
 
         val gpt3Settings = mapOf(
             "model" to model, "max_tokens" to max_tokens, "temperature" to temperature,
             "top_p" to top_p, "n" to n, "stream" to stream, "logprobs" to logprobs,
             "frequency_penalty" to frequency_penalty, "presence_penalty" to presence_penalty,
-            "chatWindowSize" to chatWindowSize, "tokensCheckBox" to tokensInfo
+            "chatWindowSize" to chatWindowSize, "tokensCheckBox" to tokensInfo, "systemRoleContent" to systemRoleContent
         )
         return gpt3Settings
     }
@@ -665,6 +698,7 @@ open class AssistantService : Service() {
         gpt3SettingsPreferences.putString("language_model", "gpt-3")
         gpt3SettingsPreferences.putString("chatWindowSize", "5")
         gpt3SettingsPreferences.putString("tokensCheckBox", "false")
+        gpt3SettingsPreferences.putString("systemRoleContent", "You are a helpful friend.")
         gpt3SettingsPreferences.apply()
     }
     companion object {

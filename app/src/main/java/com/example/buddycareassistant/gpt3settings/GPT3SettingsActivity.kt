@@ -5,7 +5,10 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
+import com.example.buddycareassistant.AssistantChatAdapter
 import com.example.buddycareassistant.R
+import com.example.buddycareassistant.storemessages.MessageStorage
+import com.example.buddycareassistant.utils.LogUtil
 import com.google.android.material.textfield.TextInputEditText
 
 class GPT3SettingsActivity : AppCompatActivity() {
@@ -33,10 +36,15 @@ class GPT3SettingsActivity : AppCompatActivity() {
     private lateinit var tokensCheckBox: CheckBox
     private lateinit var txtChatWindow: TextView
     private lateinit var etChatWindow: TextInputEditText
+    private lateinit var txtSystemRole: TextView
+    private lateinit var etSystemRole: TextInputEditText
+    private lateinit var logger: LogUtil
     private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
+    private lateinit var messageStorage: MessageStorage
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
+    private val assistantAdapter by lazy { AssistantChatAdapter() }
 
 
     @SuppressLint("SetTextI18n", "MissingInflatedId")
@@ -67,6 +75,11 @@ class GPT3SettingsActivity : AppCompatActivity() {
         tokensCheckBox = findViewById(R.id.tokensCheckBox)
         txtChatWindow = findViewById(R.id.txtChatWindow)
         etChatWindow = findViewById(R.id.etChatWindow)
+        txtSystemRole = findViewById(R.id.txtSystemRole)
+        etSystemRole = findViewById(R.id.etSystemRole)
+
+        messageStorage = MessageStorage(this)
+        logger = LogUtil
 
         val model = mPreferences.getString("model", "gpt-3.5-turbo")
         val max_tokens = mPreferences.getString("max_tokens", "200")
@@ -79,6 +92,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
         val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
         val chatWindowSize = mPreferences.getString("chatWindowSize", "5")
+        val systemRoleContent = mPreferences.getString("systemRoleContent", "You are a helpful friend.")
 
 
         /* Default-settings
@@ -105,6 +119,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         val settedStreamIndex = streamOptions.indexOf(stream.toBoolean())
         val settedLogProbsIndex = logprobsOptions.indexOf(logprobs)
 
+        txtSystemRole.text ="System role content: $systemRoleContent"
         spModel.adapter = adapterGPT3Models
         spModel.setSelection(settedModelIndex)
         spStream.adapter = adapterStream
@@ -218,6 +233,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
         etN.setText(n)
         etMaxTokens.setText(max_tokens)
         etChatWindow.setText(chatWindowSize)
+        etSystemRole.setText(systemRoleContent)
 
 
         txtModel.text = "model: $model"
@@ -235,6 +251,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             val etMaxTokensInpText = etMaxTokens.text.toString()
             val etChatWindowSizeText = etChatWindow.text.toString()
             val etNInpText = etN.text.toString()
+            val inSystemRoleContent = etSystemRole.text.toString()
 
             txtModel.text = "model: $spModelSelectedItem"
             txtMaxTokens.text = "max_tokens: $etMaxTokensInpText"
@@ -246,6 +263,9 @@ class GPT3SettingsActivity : AppCompatActivity() {
             txtPresencePenalty.text = "presence_penalty: $skPresencePenaltyValue"
             txtFrequencyPenalty.text = "frequency_penalty: $skFrequencyPenaltyValue"
             txtChatWindow.text = "Chat Window Size: $etChatWindowSizeText"
+            txtSystemRole.text = "System role content: $inSystemRoleContent"
+
+
 
 
             mPreferences.edit()
@@ -260,7 +280,32 @@ class GPT3SettingsActivity : AppCompatActivity() {
                 .putString("presence_penalty", skPresencePenaltyValue.toString())
                 .putString("chatWindowSize", etChatWindowSizeText)
                 .putString("tokensCheckBox", tokensCheckBox.isChecked.toString())
+                .putString("systemRoleContent", inSystemRoleContent)
                 .apply()
+
+            messageStorage.clearMessages()
+            assistantAdapter.items.clear()
+            assistantAdapter.notifyDataSetChanged()
+            val tempText = """
+            {
+              "model": "$spModelSelectedItem",
+              "messages": [
+                        {"role": "system", "content": "$inSystemRoleContent"}
+                    ],
+               "max_tokens": $etMaxTokensInpText,
+               "temperature": $progressValueTemperature,
+               "top_p": $progressValueTopP,
+               "n": $etNInpText,
+               "stream": $spStreamSelectedItem,
+               "frequency_penalty":$skFrequencyPenaltyValue,
+               "presence_penalty":$skPresencePenaltyValue
+            }
+        """
+
+            logger.i(this, TAG, "New GPTPromt settings:\n $tempText")
+
+            messageStorage.saveGptPrompt(tempText)
+
 
             Toast.makeText(this@GPT3SettingsActivity, "Settings updated", Toast.LENGTH_SHORT).show()
         }
@@ -279,6 +324,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             gpt3SettingsPreferences.putString("presence_penalty", "0.6")
             gpt3SettingsPreferences.putString("chatWindowSize", "5")
             gpt3SettingsPreferences.putString("tokensCheckBox", "false")
+            gpt3SettingsPreferences.putString("systemRoleContent", "You are a helpful friend.")
             gpt3SettingsPreferences.apply()
 
             val model = mPreferences.getString("model", "gpt-3.5-turbo")
@@ -292,6 +338,7 @@ class GPT3SettingsActivity : AppCompatActivity() {
             val presence_penalty = mPreferences.getString("presence_penalty", "0.6")
             val tokensInfo = mPreferences.getString("tokensCheckBox", "false")
             val tempChatWindowSize = mPreferences.getString("chatWindowSize", "5")
+            val systemRoleControl = mPreferences.getString("systemRoleContent", "You are a helpful friend.")
 
 
             txtModel.text = "model: $model"
@@ -305,9 +352,13 @@ class GPT3SettingsActivity : AppCompatActivity() {
             txtTopP.text = "top_p: ${top_p?.toFloat()}"
             tokensCheckBox.isChecked = tokensInfo.toBoolean()
             txtChatWindow.text = "Chat Window Size: $tempChatWindowSize"
+            txtSystemRole.text = "System role content: $systemRoleControl"
 
             etN.setText(n)
             etMaxTokens.setText(max_tokens)
+
+            etChatWindow.setText(tempChatWindowSize)
+            etSystemRole.setText(systemRoleControl)
 
             if (frequency_penalty != null){
                 skFrequencyPenalty.progress = ((frequency_penalty.toFloat().plus(2.0)).times(100)).toInt()
@@ -342,12 +393,29 @@ class GPT3SettingsActivity : AppCompatActivity() {
             spModel.setSelection(settedModelIndex)
             spLogProbs.setSelection(settedLogProbsIndex)
 
+            messageStorage.clearMessages()
+            assistantAdapter.items.clear()
+            assistantAdapter.notifyDataSetChanged()
+            val tempText = """
+            {
+              "model": "$model",
+              "messages": [
+                        {"role": "system", "content": "$systemRoleControl"}
+                    ],
+               "max_tokens": $max_tokens,
+               "temperature": $progressValueTemperature,
+               "top_p": $progressValueTopP,
+               "n": $n,
+               "stream": $stream,
+               "frequency_penalty":$frequency_penalty,
+               "presence_penalty":$presence_penalty
+            }
+        """
+
+            logger.i(this, TAG, "Default GPTPromt settings:\n $tempText")
+            messageStorage.saveGptPrompt(tempText)
+
             Toast.makeText(this@GPT3SettingsActivity, "Default settings restored", Toast.LENGTH_SHORT).show()
-
-
         }
-
-
     }
-
 }

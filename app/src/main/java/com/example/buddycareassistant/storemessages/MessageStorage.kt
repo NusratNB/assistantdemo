@@ -3,6 +3,7 @@ package com.example.buddycareassistant.storemessages
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import com.example.buddycareassistant.utils.LogUtil
 import org.json.JSONObject
 import java.io.*
 import java.nio.charset.Charset
@@ -13,6 +14,7 @@ class MessageStorage(private val context: Context) {
     private val gptPromptFileName = "GPTPrompt.txt"
     private lateinit var pathToSavingMessages: File
     private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
+    private val logger = LogUtil
 
     fun storeMessages(messages: List<Pair<String, String>>) {
         pathToSavingMessages = File(context.externalCacheDir?.absolutePath, "Messages")
@@ -24,14 +26,13 @@ class MessageStorage(private val context: Context) {
         val stringBuilder = StringBuilder()
 
         if (existingMessages.isNotEmpty()){
-            Log.d("txtFile", "length: ${existingMessages.size}")
+            logger.d(context,TAG, "length: ${existingMessages.size}")
             for (currentMessage in  existingMessages){
 //                val currentMessage = existingMessages[i]
                 stringBuilder.append(
                     "$currentMessage\n"
                 )
-                Log.d("txtFile", "currentMessage: $currentMessage")
-                Log.d("txtFile", "string")
+                logger.d(context,TAG, "currentMessage: $currentMessage")
             }
         }
         messages.forEach { (user, message) ->
@@ -119,9 +120,9 @@ class MessageStorage(private val context: Context) {
             val fileWriter = FileWriter(file)
             fileWriter.write(prompt)
             fileWriter.close()
-            println("Text saved successfully to $file.")
+            logger.i(context, TAG, "Text saved successfully to $file.")
         } catch (e: IOException) {
-            println("Error occurred while saving the text: ${e.message}")
+            logger.i(context,TAG, "Error occurred while saving the text: ${e.message}")
         }
     }
 
@@ -137,7 +138,7 @@ class MessageStorage(private val context: Context) {
                         {"role": "system", "content": "You are a helpful friend."}
                     ]
                     ,
-               "max_tokens": 200,
+               "max_tokens": 1000,
                "temperature": 1.0,
                "top_p": 1.0,
                "n": 1,

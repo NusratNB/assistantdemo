@@ -1,139 +1,178 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="5dp"
-        android:padding="10dp"
-        >
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Memory quality"
-            android:textSize="15sp"
-            android:layout_weight="1"
-            />
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal"
+            android:padding="10dp">
 
-        <Spinner
-            android:id="@+id/spMemoryQuality"
-            android:layout_width="wrap_content"
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Memory quality"
+                android:textSize="15sp" />
+
+            <Spinner
+                android:id="@+id/spMemoryQuality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            />
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Language"
+                android:textSize="15sp" />
+
+            <Spinner
+                android:id="@+id/spLanguage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Conversational Style"
+                android:textSize="15sp" />
+
+            <Spinner
+                android:id="@+id/spConversationalStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Voice"
+                android:textSize="15sp" />
+
+            <Spinner
+                android:id="@+id/spGender"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Play Volume"
+                android:textSize="15sp" />
+
+            <androidx.appcompat.widget.AppCompatSeekBar
+                android:id="@+id/sbVolume"
+                android:layout_width="150dp"
+                android:layout_height="wrap_content"
+                android:progress="100" />
+
+        </LinearLayout>
 
     </LinearLayout>
+
+<!--    <LinearLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:layout_marginBottom="30dp"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:paddingHorizontal="30dp">-->
+
+
+<!--        <Button-->
+<!--            android:id="@+id/btnGPTFullSettings"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_margin="10dp"-->
+<!--            android:text="GPT settings" />-->
+
+<!--        <Button-->
+<!--            android:id="@+id/btnSave"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_margin="10dp"-->
+<!--            android:text="Save settings" />-->
+
+<!--    </LinearLayout>-->
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="5dp"
-        android:padding="10dp"
-        >
+        android:gravity="center"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom = "20dp"
+        android:layout_marginTop="10dp">
 
-        <TextView
-            android:layout_width="0dp"
+        <Button
+            android:id="@+id/btnGPTFullSettings"
+            android:layout_width="160dp"
             android:layout_height="wrap_content"
-            android:text="Language"
-            android:textSize="15sp"
-            android:layout_weight="1"
-            />
+            android:layout_margin = "5dp"
+            android:layout_marginBottom = "10dp"
+            android:text="GPT settings"/>
 
-        <Spinner
-            android:id="@+id/spLanguage"
-            android:layout_width="wrap_content"
+
+        <Button
+            android:id="@+id/btnSave"
+            android:layout_width="160dp"
             android:layout_height="wrap_content"
-            />
+            android:layout_margin = "5dp"
+            android:text="Save settings"/>
 
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="5dp"
-        android:padding="10dp"
-        >
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Conversational Style"
-            android:textSize="15sp"
-            android:layout_weight="1"
-            />
-
-        <Spinner
-            android:id="@+id/spConversationalStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
-
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="5dp"
-        android:padding="10dp"
-        android:visibility="gone"
-        >
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Voice"
-            android:textSize="15sp"
-            android:layout_weight="1"
-            />
-
-        <Spinner
-            android:id="@+id/spGender"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
 
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="5dp"
-        android:padding="10dp"
-        android:visibility="gone"
-        >
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Play Volume"
-            android:textSize="15sp"
-            android:layout_weight="1"
-            />
-
-        <androidx.appcompat.widget.AppCompatSeekBar
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:id="@+id/sbVolume"
-            android:progress="100"
-            />
-
-    </LinearLayout>
-
-    <Button
-        android:id="@+id/btnSave"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Save settings"
-        android:paddingHorizontal="30dp"
-        android:layout_gravity="center|bottom"
-        android:layout_marginBottom="20dp"
-        />
-
-</LinearLayout>
+</RelativeLayout>

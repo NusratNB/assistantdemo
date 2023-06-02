@@ -1,11 +1,13 @@
 package com.example.buddycareassistant
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.*
 import android.content.pm.PackageManager
 import android.os.*
 import android.util.Log
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
@@ -16,6 +18,7 @@ import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.buddycareassistant.googlespeechservices.GoogleServices
+import com.example.buddycareassistant.gpt3settings.GPT3SettingsActivity
 import com.example.buddycareassistant.service.AssistantService
 import com.example.buddycareassistant.storemessages.MessageStorage
 import com.example.buddycareassistant.utils.LogUtil
@@ -41,6 +44,9 @@ class MainActivity : AppCompatActivity() {
     private val mPreferences by lazy {
         getSharedPreferences("assistant_demo", MODE_PRIVATE)
     }
+    private val mPreferenceGPTSettings by lazy {
+        getSharedPreferences("buddycare_assistant", MODE_PRIVATE)
+    }
     private val TAG ="BuddyCareAssistant: " + this::class.java.simpleName
     private var foregroundBleService: AssistantService? = null
     private val serviceConnection by lazy {
@@ -59,6 +65,7 @@ class MainActivity : AppCompatActivity() {
     private val uiReceiver by lazy { UIReceiver() }
 
     //    @RequiresApi(Build.VERSION_CODES.S)
+
     @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,10 +92,13 @@ class MainActivity : AppCompatActivity() {
         ivSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
+
+
         ivClear.setOnClickListener {
             messageStorage.clearMessages()
             assistantAdapter.items.clear()
             assistantAdapter.notifyDataSetChanged()
+            val systemRoleContent = mPreferenceGPTSettings.getString("systemRoleContent", "You are a helpful friend.").toString()
             val gptPromptFileName = "GPTPrompt.txt"
             pathToSavingMessagesMainActivity = File(this.externalCacheDir?.absolutePath, "Messages")
             if (!pathToSavingMessagesMainActivity.exists()){
@@ -98,9 +108,9 @@ class MainActivity : AppCompatActivity() {
             {
               "model": "gpt-3.5-turbo",
               "messages": [
-                        {"role": "system", "content": "You are a helpful friend."}
+                        {"role": "system", "content": "$systemRoleContent"}
                     ],
-               "max_tokens": 200,
+               "max_tokens": 1000,
                "temperature": 1.0,
                "top_p": 1.0,
                "n": 1,
@@ -145,6 +155,11 @@ class MainActivity : AppCompatActivity() {
             addAction(ASSISTANT_RESPONSE_STATE)
         })
         tvLanguage.text = "Language: ${mPreferences.getString("language", "Korean")}"
+
+        if(messageStorage.retrieveUserAssistantMessages().isEmpty()) {
+            assistantAdapter.items.clear()
+            assistantAdapter.notifyDataSetChanged()
+        }
     }
 
     override fun onDestroy() {
