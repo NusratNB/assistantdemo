@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
 
     inner class UIReceiver: BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            Log.d("ssss", "intent " + intent?.action);
+//            Log.d("ssss", "intent " + intent?.action);
             if (intent?.action.equals(RECORDING_STATE)) {
                 val isRecording = intent?.getBooleanExtra("isRecording", false) ?: false
                 val isRecordingEnabled = intent?.getBooleanExtra("isRecordingEnabled", false)?:false

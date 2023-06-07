@@ -225,7 +225,7 @@ open class AssistantService : Service() {
         if (result==AudioManager.AUDIOFOCUS_REQUEST_GRANTED){
             logger.i(ctx, TAG, "Audio focus successfully abandoned")
         }else
-            logger.i(ctx, TAG, "Audio focus not abandoned")
+            logger.i(ctx, TAG, "Warning: Audio focus not abandoned")
         releaseMediaPlayer()
         closeChannel()
     }
